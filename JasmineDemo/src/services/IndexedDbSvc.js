@@ -348,7 +348,7 @@ var IndexedDbSvc = (function () {
                     var db = evt.target.result;
 
                     /** @type {IDBTransaction} */
-                    var tx = db.transaction(storeName, "readwrite"); //  open tx against the specified table(s)
+                    var tx = db.transaction(storeName, "readwrite"); // open tx against the specified table(s)
 
                     /** @type {IDBObjectStore} */
                     var store = tx.objectStore(storeName);
@@ -1369,6 +1369,10 @@ var IndexedDbSvc = (function () {
         return false;
     };
 
+    /**
+     * Converts an object to a form that can be sortable.
+     * @param {any} obj The object to convert into a sortable form.
+     */
     var _objectToSortable = function (obj) {
 
         if (obj !== null && obj !== undefined && _isString(obj)) {
@@ -1377,7 +1381,6 @@ var IndexedDbSvc = (function () {
 
         return obj;
     };
-
 
     /**
      * Sorts an array of query result items.
@@ -1440,8 +1443,8 @@ var IndexedDbSvc = (function () {
     };
 
     /**
-    Pass this to array.sort(fn). Sorts an array by many fields and each in either asc or desc order.
-    @param {array} fields An array of field string names and/or sub-arrays of names, direction flag, and conversion functions.
+    * Pass this to array.sort(fn). Sorts an array by many fields and each in either asc or desc order.
+    * @param {ArrayLike} fields An array of field string names and/or sub-arrays of names, direction flag, and conversion functions.
     */
     var _sortByMany = function (fields) {
 
