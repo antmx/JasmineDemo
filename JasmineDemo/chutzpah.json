@@ -1,0 +1,15 @@
+﻿{
+  "Framework": "jasmine",
+  //"Compile": {
+  //  "Extensions": [ ".ts" ],
+  //  "ExtensionsWithNoOutput": [ ".d.ts" ],
+  //  "Executable": "compile.bat"
+  //},
+  "References": [
+    { "Path": "./src/misc.js" },
+    { "Path": "./src/services/IndexedDbSvc.js" }
+  ],
+  "Tests": [
+    { "Path": "./spec" }
+  ]
+}

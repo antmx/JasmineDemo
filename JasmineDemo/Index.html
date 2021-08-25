@@ -1,0 +1,60 @@
+﻿<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8" />
+    <title>IndexedDbSvc Demo</title>
+    <script src="lib/vuejs/vue.js"></script>
+    <script src="src/services/IndexedDbSvc.js"></script>
+
+    <link href="lib/bootstrap/bootstrap.css" rel="stylesheet" />
+
+    <link rel="apple-touch-icon" sizes="180x180" href="img/apple-touch-icon.png" />
+    <link rel="icon" type="image/png" sizes="32x32" href="img/favicon-32x32.png" />
+    <link rel="icon" type="image/png" sizes="16x16" href="img/favicon-16x16.png" />
+</head>
+<body>
+    <div class="container" id="root">
+
+        <h1>IndexedDbSvc Demo</h1>
+
+        <div class="row">
+
+            <div class="col-2">
+                <button id="btnCreateDb" class="btn btn-sm btn-success mb-1 w-100" v-on:click="createDb" v-bind:disabled="dbCreated">Create database</button>
+                <button id="btnListStores" class="btn btn-sm btn-secondary mb-1 w-100" v-on:click="listStores" :disabled="!dbCreated">List stores</button>
+                <button id="btnPopulateStore" class="btn btn-sm btn-secondary mb-1 w-100" v-on:click="populateStore(); listStoreData(null); activateStoreListElem(null);" :disabled="!isStoreSelected">Populate store</button>
+                <button id="btnDeleteDb" class="btn btn-sm btn-danger mb-1 w-100" v-on:click="deleteDb" :disabled="!dbCreated">Delete database</button>
+            </div>
+
+            <div class="col-10">
+
+                <div class="list-group mb-1" v-if="storeNames.length > 0">
+                    <a href="#" class="list-group-item list-group-item-action" v-bind:class="{ active : activeStoreName == storeName }" v-for="storeName in storeNames" :key="storeName" v-on:click="listStoreData(storeName); activateStoreListElem(storeName)">
+                        {{ storeName }}
+                    </a>
+                </div>
+
+                <ul class="list-group mb-1" v-if="storeData.length > 0">
+                    <li class="list-group-item" v-for="row in storeData">
+                        <div class="row">
+                            <div class="col-sm-9">{{ row }}</div>
+                            <div class="col-sm-3 text-end">
+                                <button class="btn btn-xs btn-secondary" v-on:click="showStoreItemEditor(row)">Edit</button>
+                                <button class="btn btn-xs btn-danger">Delete</button>
+                            </div>
+                        </div>
+                    </li>
+                    <li class="list-group-item list-group-item-action">
+                        <button class="btn btn-sm btn-success" v-on:click="showStoreItemEditor(null)">Add row</button>
+                    </li>
+                </ul>
+
+            </div>
+
+        </div>
+
+    </div>
+
+    <script src="src/index-vue.js"></script>
+</body>
+</html>
