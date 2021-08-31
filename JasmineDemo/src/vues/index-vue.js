@@ -1,4 +1,4 @@
-﻿/// <reference path="services/indexeddbsvc.js" />
+﻿/// <reference path="../services/indexeddbsvc.js" />
 
 /** Vue for index page  */
 var indexVue = new Vue({
@@ -45,7 +45,10 @@ var indexVue = new Vue({
                 { PolicyID: 3, PolicyRef: "POL003", CustomerID: 2 }
             ]
             ]
-        ]
+        ],
+        xxselectedCustomerID: -1,
+        selectedCustomer: {},
+        selectedPolicy: {}
     },
 
     computed: {
@@ -90,6 +93,8 @@ var indexVue = new Vue({
 
         listStores: function () {
             var self = this;
+
+            this.storeData = [];
 
             this.idxDbSvc.FetchAllStores()
                 .then(function (storeNames) {
@@ -137,8 +142,47 @@ var indexVue = new Vue({
 
         showStoreItemEditor: function (itemIdentifier) {
 
-            console.log("Show editor for " + this.activeStoreName);
-            debugger;
+            var self = this;
+
+            this.clearSelectedItems();
+
+            switch (this.activeStoreName) {
+                case "Customer":
+                    if (itemIdentifier != null) {
+                        this.idxDbSvc
+                            .Select("Customer", function (c) { return c.CustomerID == itemIdentifier; })
+                            .then(function (customers) {
+                                self.selectedCustomer = customers[0];
+                            });
+                    }
+                    else {
+                        self.selectedCustomer = { CustomerID: 0 };
+                    }
+                    break;
+
+                case "Policy":
+                    if (itemIdentifier != null) {
+                        this.idxDbSvc
+                            .Select("Policy", function (p) { return p.PolicyID == itemIdentifier; })
+                            .then(function (policies) {
+                                console.log("Selecting Policy " + policies[0].PolicyID);
+                                self.selectedPolicy = policies[0];
+                            });
+                    }
+                    else {
+                        self.selectedPolicy = { PolicyID: 0 };
+                    }
+                    break;
+
+                default:
+                    console.error("Unexpected activeStoreName: " + this.activeStoreName);
+            }
+        },
+
+        clearSelectedItems: function () {
+
+            this.selectedCustomer = {};
+            this.selectedPolicy = {};
         }
     }
 });

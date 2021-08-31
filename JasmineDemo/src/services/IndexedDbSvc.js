@@ -45,7 +45,7 @@ var IndexedDbSvc = (function () {
 
                     // Apply filter
                     if (typeof filterFn === "function") {
-                        resultItems = grep(resultItems, filterFn);
+                        resultItems = _grep(resultItems, filterFn);
                     }
 
                     // Apply transform to each element
@@ -106,7 +106,7 @@ var IndexedDbSvc = (function () {
 
                         var dbItemFieldValue = dbItem[dbField];
 
-                        matchingArrayItems = grep(joinArray, function (arrItm) {
+                        matchingArrayItems = _grep(joinArray, function (arrItm) {
 
                             // Get the array item's field if specified
                             if (arrayField != null) {
@@ -178,7 +178,7 @@ var IndexedDbSvc = (function () {
 
                         var dbItemFieldValue = dbItem[dbField];
 
-                        matchingArrayItems = grep(joinArray, function (arrItm) {
+                        matchingArrayItems = _grep(joinArray, function (arrItm) {
 
                             return _stringEquals(arrItm[arrayField], dbItemFieldValue);
                         });
@@ -255,7 +255,7 @@ var IndexedDbSvc = (function () {
 
                         leftJoinFieldValue = leftItem[leftJoinField];
 
-                        matchingRightItems = grep(rightItems, function (arrItm) {
+                        matchingRightItems = _grep(rightItems, function (arrItm) {
 
                             return _stringEquals(arrItm[rightJoinField], leftJoinFieldValue);
                         });
@@ -1489,6 +1489,42 @@ var IndexedDbSvc = (function () {
 
             return result;
         }
+    };
+
+    /**
+    * Filters the items in an array, like $.grep.
+    * @param {Array<any>} arr Array to be filtered.
+    * @param {function} filterFn Predicate function to filter items with, should return bool.
+    * @param {boolean} [returnFirstItemOnly] Optional flag specifying whether to return only the first matching item as a single object. Otherwise an array of all matching items is returns.
+    * @return {[]|object}
+    */
+    var _grep = function (arr, filterFn, returnFirstItemOnly) {
+
+        if (typeof filterFn !== "function") {
+            // Default to finding all items
+            filterFn = function () { return true; };
+        }
+
+        var filteredItems = [];
+        var obj;
+        var isMatch;
+        var idx;
+
+        for (idx = 0; idx < arr.length; idx++) {
+            obj = arr[idx];
+            isMatch = filterFn.call(null, obj) === true;
+
+            if (isMatch) {
+                if (returnFirstItemOnly) {
+                    // Skip the rest
+                    return obj;
+                }
+
+                filteredItems.push(obj);
+            }
+        }
+
+        return filteredItems;
     };
 
     // Return the instantiated 'class'

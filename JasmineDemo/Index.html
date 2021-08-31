@@ -3,8 +3,14 @@
 <head>
     <meta charset="utf-8" />
     <title>IndexedDbSvc Demo</title>
+
     <script src="lib/vuejs/vue.js"></script>
+    <script src="lib/requirejs/requirejs-2.3.6.js"></script>
     <script src="src/services/IndexedDbSvc.js"></script>
+
+    <script src="src/vue-components/button-counter.js"></script>
+    <script src="src/vue-components/customer-store-item-editor.js"></script>
+    <script src="src/vue-components/policy-store-item-editor.js"></script>
 
     <link href="lib/bootstrap/bootstrap.css" rel="stylesheet" />
 
@@ -16,6 +22,8 @@
     <div class="container" id="root">
 
         <h1>IndexedDbSvc Demo</h1>
+
+        <hr />
 
         <div class="row">
 
@@ -39,7 +47,7 @@
                         <div class="row">
                             <div class="col-sm-9">{{ row }}</div>
                             <div class="col-sm-3 text-end">
-                                <button class="btn btn-xs btn-secondary" v-on:click="showStoreItemEditor(row)">Edit</button>
+                                <button class="btn btn-xs btn-secondary" v-on:click="showStoreItemEditor(row.PolicyID || row.CustomerID)">Edit</button>
                                 <button class="btn btn-xs btn-danger">Delete</button>
                             </div>
                         </div>
@@ -49,13 +57,23 @@
                     </li>
                 </ul>
 
+                <div>
+                    <policy-store-item-editor v-if="selectedPolicy.PolicyID >= 0" v-bind:policy="selectedPolicy" />
+                </div>
+                
+                <div>
+                    <customer-store-item-editor v-if="selectedCustomer.CustomerID >= 0" xv-bind:customer-id="selectedCustomer.CustomerID" xv-bind:customer-name="selectedCustomer.CustomerName" v-bind:customer="selectedCustomer" />
+                </div>
+
             </div>
 
         </div>
 
+        <!--<button-counter />-->
+
     </div>
 
-    <script src="src/index-vue.js"></script>
+    <script src="src/vues/index-vue.js"></script>
+
 </body>
 </html>
-
