@@ -37,12 +37,12 @@
             <div class="col-10">
 
                 <div class="list-group mb-1" v-if="storeNames.length > 0">
-                    <a href="#" class="list-group-item list-group-item-action" v-bind:class="{ active : activeStoreName == storeName }" v-for="storeName in storeNames" :key="storeName" v-on:click="listStoreData(storeName); activateStoreListElem(storeName)">
+                    <a href="#" class="list-group-item list-group-item-action" v-bind:class="{ active : activeStoreName == storeName }" v-for="storeName in storeNames" :key="storeName" v-on:click="clearSelectedItems(); listStoreData(storeName); activateStoreListElem(storeName)">
                         {{ storeName }}
                     </a>
                 </div>
 
-                <ul class="list-group mb-1" v-if="storeData.length > 0">
+                <ul class="list-group mb-1" v-if="storeData.length > 0 || activeStoreName != null">
                     <li class="list-group-item" v-for="row in storeData">
                         <div class="row">
                             <div class="col-sm-9">{{ row }}</div>
@@ -53,23 +53,21 @@
                         </div>
                     </li>
                     <li class="list-group-item list-group-item-action">
-                        <button class="btn btn-sm btn-success" v-on:click="showStoreItemEditor(null)">Add row</button>
+                        <button class="btn btn-sm btn-success" v-on:click="showStoreItemEditor(null)">Add {{activeStoreName || "item"}}</button>
                     </li>
                 </ul>
 
                 <div>
-                    <policy-store-item-editor v-if="selectedPolicy.PolicyID >= 0" v-bind:policy="selectedPolicy" />
-                </div>
-                
-                <div>
                     <customer-store-item-editor v-if="selectedCustomer.CustomerID >= 0" xv-bind:customer-id="selectedCustomer.CustomerID" xv-bind:customer-name="selectedCustomer.CustomerName" v-bind:customer="selectedCustomer" />
+                </div>
+
+                <div>
+                    <policy-store-item-editor v-if="selectedPolicy.PolicyID >= 0" v-bind:policy="selectedPolicy" />
                 </div>
 
             </div>
 
         </div>
-
-        <!--<button-counter />-->
 
     </div>
 

@@ -12,6 +12,12 @@ Vue.component('customer-store-item-editor', {
         //customerName: String,
         customer: Object
     },
+    methods: {
+        saveCustomer: function (event) {
+            debugger;
+            console.log(this.customer.CustomerName);
+        }
+    },
     template: `
 <form>
     <label class="col-xs-2 control-label fw-bold">{{customer.CustomerID > 0 ? 'Edit' : 'Add'}} Customer {{customer.CustomerName}}</label>
@@ -34,6 +40,12 @@ Vue.component('customer-store-item-editor', {
             <input type="text" class="form-control" xid="CustomerRef" placeholder="Ref" v-bind:value="customer.CustomerRef" />
         </div>
     </div>
-</form>`
+</form>
+<div class="row mb-1">
+    <div class="col-sm-3">
+        <button class="btn btn-primary btn-sm" v-on:click="saveCustomer">Save</button>
+    </div>
+</div>
+`
 
 });

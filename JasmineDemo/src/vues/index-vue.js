@@ -46,7 +46,6 @@ var indexVue = new Vue({
             ]
             ]
         ],
-        xxselectedCustomerID: -1,
         selectedCustomer: {},
         selectedPolicy: {}
     },
@@ -99,6 +98,10 @@ var indexVue = new Vue({
             this.idxDbSvc.FetchAllStores()
                 .then(function (storeNames) {
                     self.storeNames = storeNames;
+
+                    if (storeNames && storeNames.length > 0) {
+                        self.dbCreated = true;
+                    }
                 });
         },
 
@@ -156,6 +159,7 @@ var indexVue = new Vue({
                             });
                     }
                     else {
+                        // New Customer
                         self.selectedCustomer = { CustomerID: 0 };
                     }
                     break;
@@ -184,5 +188,12 @@ var indexVue = new Vue({
             this.selectedCustomer = {};
             this.selectedPolicy = {};
         }
+    },
+
+    mounted: function () {
+
+        this.$nextTick(function () {
+            // Will be executed when the DOM is ready
+        })
     }
 });
