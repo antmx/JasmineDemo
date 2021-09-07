@@ -4,16 +4,54 @@
 */
 
 /**
- * Options for controlling the results of the {@link IndexedDbSvc.select} function.
- * @typedef {Object} selectOptions
- * @property { string } indexName - Optional. Name of index to search in.
- * @property { IDBKeyRange } keyRange - Optional. A key range can be a single value or a range with upper and lower bounds or endpoints. If the key range has both upper and lower bounds, then it is bounded; if it has no bounds, it is unbounded. A bounded key range can either be open (the endpoints are excluded) or closed (the endpoints are included).
- * @property { Function } filterFn - Optional. A function to filter items in the store being queried. Should be something like: function (elementOfArray[, indexInArray]) { return elementOfArray.pr_Deleted == "False"; })
- * @property { Function } transformFn - Optional.  A function to transform each item before adding it to the result array. Pass null to return the original item. Should be something like: function (valueOfElement) { return new Genus.PriceMatrixRule(valueOfElement); }
- * @property { Function|string|ArrayLike<string>|boolean } orderBy - Optional. Either a function to sort items, a string naming 1 field to sort by, or an array of strings naming multiple fields to sort by, or true to sort string array by default ascii character order.
- * @property { boolean } sortAscending - Optional. A flag specifying whether to sort in ascending order (default) or descending.
- * @property { boolean } returnFirstItemOnly - Optional. Pass true to have just the first result item returned; otherwise an array containing all results is returned.
+    * Options for select function.
+    * @typedef {Object} selectOptions
+    * @property { string } indexName - Optional. Name of index to search in.
+    * @property { IDBKeyRange } keyRange - Optional. A key range can be a single value or a range with upper and lower bounds or endpoints. If the key range has both upper and lower bounds, then it is bounded; if it has no bounds, it is unbounded. A bounded key range can either be open (the endpoints are excluded) or closed (the endpoints are included).
+    * @property { Function } filterFn - Optional. A function to filter items in the store being queried. Should be something like: function (elementOfArray[, indexInArray]) { return elementOfArray.pr_Deleted == "False"; })
+    * @property { Function } transformFn - Optional.  A function to transform each item before adding it to the result array. Pass null to return the original item. Should be something like: function (valueOfElement) { return new Genus.PriceMatrixRule(valueOfElement); }
+    * @property { Function|string|ArrayLike<string>|boolean } orderBy - Optional. Either a function to sort items, a string naming 1 field to sort by, or an array of strings naming multiple fields to sort by, or true to sort string array by default ascii character order.
+    * @property { boolean } sortAscending - Optional. A flag specifying whether to sort in ascending order (default) or descending.
+    * @property { boolean } returnFirstItemOnly - Optional. Pass true to have just the first result item returned; otherwise an array containing all results is returned.
  */
+
+/**
+    * Options for selectInnerJoin function.
+    * @typedef {Object} selectInnerJoinOptions
+    * @property {function} [filterFn] Optional function to filter items in the store being queried.
+    * @property {function|Boolean|null} [transformFnOrSelectDbItemsOnly] Optional function to transform each database and matching array item before adding it to the result array. Or pass true to return just the database items. Or pass null/false to return database items merged with the matching array item.
+    * @property {function|string|Array<string>|null} [orderBy] Optional either a function to sort items, a string naming 1 field to sort by, or an array of strings naming multiple fields to sort by. Sorting is performed on the joined items.
+    * @property {bool} [sortAscending] Optional Flag specifying whether to sort in ascending order (default) or descending.
+    * @property {Array} joinArray The array to join to.
+    * @property {string} dbField The database field name to join with arrayField.
+    * @property {string} [arrayField] The array field name to join with dbField. Ignore this param if you want to compare against array items themselves, e.g. array of int IDs.
+*/
+
+/**
+    * Options for selectLeftJoinOnArray function.
+    * @typedef {Object} selectLeftJoinOnArrayOptions
+    * @property {function} filterFn Optional function to filter items in the store being queried.
+    * @property {function|boolean} transformFnOrSelectDbItemsOnly Optional function to transform each database and array before adding it to the result array. Or pass true to return just the database items. Or pass null/false to return database items merged with the matching array item.
+    * @property {function|string|array<string>} orderBy Optional either a function to sort items, a string naming 1 field to sort by, or an array of strings naming multiple fields to sort by. Sorting is performed on the joined items.
+    * @property {bool} [sortAscending] Optional Flag specifying whether to sort in ascending order (default) or descending.
+    * @property {array} joinArray The array to join to.
+    * @property {string} dbField The database field name to join with arrayField.
+    * @property {string} arrayField The array field name to join with dbField.
+*/
+
+/**
+    * Options for selectLeftJoin function.
+    * @typedef {Object} selectLeftJoinOptions
+    * @property {string} leftStoreName Name of the left store.
+    * @property {function} [leftFilterFn] Optional function to filter items in the left store.
+    * @property {string} leftJoinField Name of the field in the left store's items to join to the right store's items.
+    * @property {string} rightStoreName Name of the right store.
+    * @property {function} [rightFilterFn] Optional function to filter items in the right store.
+    * @property {string} rightJoinField Name of the field in the right store's items to join to the left store's items.
+    * @property {function|boolean} transformFnOrSelectDbItemsOnly Optional function to transform each item before adding it to the result array. Or pass true to return just the left items. Or pass null/false to return the left items merged with the matching right items.
+    * @property {function|string|array<string>} [orderBy] Either a function to sort items, a string naming 1 field to sort by, or an array of strings naming multiple fields to sort by, or true to sort string array by default ascii character order.
+    * @property {boolean} [sortAscending] Optional Flag specifying whether to sort in ascending order (default) or descending.
+*/
 
 /**
  * Performs IndexedDB data CRUD and schema tasks.
@@ -35,83 +73,23 @@ var IndexedDbSvc = (function () {
     /**
      * Performs a data query on a store (table). Returns a Promise which is resolved when the async operation completes.
      * @param {string} storeName IndexedDB store (table) name to query.
-     * @param {selectOptions} [options] Set of options for controlling the results.
-     * @returns {promise} Promise that is resolved when the async query operation completes.
+     * @param {selectOptions} [options] Optional set of options for controlling the results.
+     * @returns {Promise} Promise that is resolved when the async query operation completes.
      */
     IndexedDbSvc.prototype.select = function (storeName, options) {
 
         options = options || {};
 
+        /** @type {selectOptions} */
         var opts = {
-
-            /** @type {string} */
             indexName: options.indexName,
-
-            /** @type {IDBKeyRange} */
             keyRange: options.keyRange,
-
-            /** @type {Function} */
             filterFn: options.filterFn,
-
-            /** @type {Function} */
             transformFn: options.transformFn,
-
-            /** @type {Function|string|ArrayLike<string>|boolean} */
             orderBy: options.orderBy,
-
-            /** @type {boolean} */
             sortAscending: options.sortAscending,
-
-            /** @type {boolean} */
             returnFirstItemOnly: options.returnFirstItemOnly
         };
-
-        /*
-        return new Promise(function (resolve, reject) {
-
-            _queryIndexedDB(storeName, null, null)
-                .then(function (resultItems) {
-
-                    // filterFn should be something like
-                    // function (elementOfArray[, indexInArray]) { return elementOfArray.pr_Deleted == "False"; })
-
-                    // transformFn should be something like
-                    // function (valueOfElement) { return new Genus.PriceMatrixRule(valueOfElement); }
-
-                    // Apply filter
-                    if (typeof filterFn === "function") {
-                        resultItems = _grep(resultItems, filterFn);
-                    }
-
-                    // Apply transform to each element
-                    if (typeof transformFn === "function") {
-                        var transformed;
-                        var valueOfElement;
-
-                        for (var idx = 0; idx < resultItems.length; idx++) {
-                            var valueOfElement = resultItems[idx];
-                            transformed = transformFn.call(null, valueOfElement);
-                            resultItems[idx] = transformed;
-                        }
-                    }
-
-                    // Sort
-                    if (orderBy != null) {
-                        _sortResultItems(resultItems, orderBy, sortAscending);
-                    }
-
-                    if (returnFirstItemOnly) {
-                        // Return just the first result item, which could be null if no results
-                        var first = resultItems[0];
-                        resolve(first);
-                    }
-                    else {
-                        resolve(resultItems);
-                    }
-                })
-                .catch(reject);
-        });
-        */
 
         return new Promise(function (resolve, reject) {
 
@@ -145,7 +123,7 @@ var IndexedDbSvc = (function () {
                             } catch (e) {
                             }
 
-                            var txErr = "IndexedDbSvc._queryIndexedDB transaction abort at " + storeName + "." + keyPath + ": " + error;
+                            var txErr = "IndexedDbSvc.select transaction abort at " + storeName + "." + keyPath + ": " + error;
                             console.error(txErr);
 
                             db.close();
@@ -164,7 +142,7 @@ var IndexedDbSvc = (function () {
                             } catch (e) {
                             }
 
-                            var txErr = "IndexedDbSvc._queryIndexedDB transaction error at " + storeName + "." + keyPath + ": " + error;
+                            var txErr = "IndexedDbSvc.select transaction error at " + storeName + "." + keyPath + ": " + error;
                             console.error(txErr);
 
                             db.close();
@@ -303,22 +281,29 @@ var IndexedDbSvc = (function () {
     /**
      * Performs a data query, joining the results to the provided array and returns database items that have a matching item in the array. Returns a Promise which is resolved when the async operation completes.
      * @param {string} storeName Name of the IndexedDB store (table) to query.
-     * @param {function} [filterFn] Optional function to filter items in the store being queried.
-     * @param {function|Boolean|null} [transformFnOrSelectDbItemsOnly] Optional function to transform each database and matching array item before adding it to the result array. Or pass true to return just the database items. Or pass null/false to return database items merged with the matching array item.
-     * @param {function|string|Array<string>|null} [orderBy] Optional either a function to sort items, a string naming 1 field to sort by, or an array of strings naming multiple fields to sort by. Sorting is performed on the joined items.
-     * @param {bool} [sortAscending] Optional Flag specifying whether to sort in ascending order (default) or descending.
-     * @param {Array} joinArray The array to join to.
-     * @param {string} dbField The database field name to join with arrayField.
-     * @param {string} [arrayField] The array field name to join with dbField. Ignore this param if you want to compare against array items themselves, e.g. array of int IDs.
-     * @returns {promise} Promise that is resolved when the async query operation completes.
+     * @param {selectInnerJoinOptions} options Set of options for controlling the results.
+     * @returns {Promise} Promise that is resolved when the async query operation completes.
      */
-    IndexedDbSvc.prototype.selectInnerJoin = function (storeName, filterFn, transformFnOrSelectDbItemsOnly, orderBy, sortAscending, joinArray, dbField, arrayField) {
+    IndexedDbSvc.prototype.selectInnerJoin = function (storeName, options) {
+
+        options = options || {};
+
+        /** @type {selectInnerJoinOptions} */
+        var opts = {
+            filterFn: options.filterFn,
+            transformFnOrSelectDbItemsOnly: options.transformFnOrSelectDbItemsOnly,
+            orderBy: options.orderBy,
+            sortAscending: options.sortAscending,
+            joinArray: options.joinArray,
+            dbField: options.dbField,
+            arrayField: options.arrayField
+        };
 
         var self = this;
 
         return new Promise(function (resolve, reject) {
 
-            self.select(storeName, filterFn)
+            self.select(storeName, { filterFn: opts.filterFn })
                 .then(function (dbItems) {
 
                     var joinedItems = [];
@@ -326,13 +311,13 @@ var IndexedDbSvc = (function () {
 
                     _forEach(dbItems, function (idx, dbItem) {
 
-                        var dbItemFieldValue = dbItem[dbField];
+                        var dbItemFieldValue = dbItem[opts.dbField];
 
-                        matchingArrayItems = _grep(joinArray, function (arrItm) {
+                        matchingArrayItems = _grep(opts.joinArray, function (arrItm) {
 
                             // Get the array item's field if specified
-                            if (arrayField != null) {
-                                arrItm = arrItm[arrayField];
+                            if (opts.arrayField != null) {
+                                arrItm = arrItm[opts.arrayField];
                             }
 
                             return _stringEquals(arrItm, dbItemFieldValue);
@@ -340,15 +325,15 @@ var IndexedDbSvc = (function () {
 
                         if (matchingArrayItems.length > 0) {
 
-                            if (typeof transformFnOrSelectDbItemsOnly === "function") {
+                            if (typeof opts.transformFnOrSelectDbItemsOnly === "function") {
                                 // Ensure the transform function takes at least 1 argument for the dbItem (it can take a 2nd arg for the joinArray item)
-                                if (transformFnOrSelectDbItemsOnly.length < 1) {
-                                    throw new Error("When transformFnOrSelectDbItemsOnly parameter is a function, it must take at least 1 argument for the db item (and optional 2nd arg for the array item)");
+                                if (opts.transformFnOrSelectDbItemsOnly.length < 1) {
+                                    throw new Error("When opts.transformFnOrSelectDbItemsOnly parameter is a function, it must take at least 1 argument for the db item (and optional 2nd arg for the array item)");
                                 }
 
-                                dbItem = transformFnOrSelectDbItemsOnly.call(null, dbItem, matchingArrayItems[0]);
+                                dbItem = opts.transformFnOrSelectDbItemsOnly.call(null, dbItem, matchingArrayItems[0]);
                             }
-                            else if (transformFnOrSelectDbItemsOnly !== true) {
+                            else if (opts.transformFnOrSelectDbItemsOnly !== true) {
                                 // Merge the first matching array item into the db item
                                 _extend(dbItem, matchingArrayItems[0]);
                             }
@@ -360,8 +345,8 @@ var IndexedDbSvc = (function () {
                     });
 
                     // Sort
-                    if (orderBy != null) {
-                        _sortResultItems(joinedItems, orderBy, sortAscending);
+                    if (opts.orderBy != null) {
+                        _sortResultItems(joinedItems, opts.orderBy, opts.sortAscending);
                     }
 
                     // Resolve
@@ -375,22 +360,28 @@ var IndexedDbSvc = (function () {
     /**
      * Performs a data query, then left-joins the results to another array and returns all database items regardless of them having a matching item in the array.
      * @param {string} storeName Name of the IndexedDB store (table) to query.
-     * @param {function} filterFn Optional function to filter items in the store being queried.
-     * @param {function|boolean} transformFnOrSelectDbItemsOnly Optional function to transform each database and array before adding it to the result array. Or pass true to return just the database items. Or pass null/false to return database items merged with the matching array item.
-     * @param {function|string|array<string>} orderBy Optional either a function to sort items, a string naming 1 field to sort by, or an array of strings naming multiple fields to sort by. Sorting is performed on the joined items.
-     * @param {bool} [sortAscending] Optional Flag specifying whether to sort in ascending order (default) or descending.
-     * @param {array} joinArray The array to join to.
-     * @param {string} dbField The database field name to join with arrayField.
-     * @param {string} arrayField The array field name to join with dbField.
-     * @returns {promise} Promise that is resolved when the async query operation completes.
+     * @param {selectLeftJoinOnArrayOptions} options Set of options for controlling the results.
+     * @returns {Promise} Promise that is resolved when the async query operation completes.
      */
-    IndexedDbSvc.prototype.selectLeftJoinOnArray = function (storeName, filterFn, transformFnOrSelectDbItemsOnly, orderBy, sortAscending, joinArray, dbField, arrayField) {
+    IndexedDbSvc.prototype.selectLeftJoinOnArray = function (storeName, options) {
+
+        options = options || {};
+
+        var opts = {
+            filterFn: options.filterFn,
+            transformFnOrSelectDbItemsOnly: options.transformFnOrSelectDbItemsOnly,
+            orderBy: options.orderBy,
+            sortAscending: options.sortAscending,
+            joinArray: options.joinArray,
+            dbField: options.dbField,
+            arrayField: options.arrayField
+        };
 
         var self = this;
 
         return new Promise(function (resolve, reject) {
 
-            self.select(storeName, filterFn)
+            self.select(storeName, opts.filterFn)
                 .then(function (dbItems) {
 
                     var joinedItems = [];
@@ -398,24 +389,24 @@ var IndexedDbSvc = (function () {
 
                     _forEach(dbItems, function (idx, dbItem) {
 
-                        var dbItemFieldValue = dbItem[dbField];
+                        var dbItemFieldValue = dbItem[opts.dbField];
 
-                        matchingArrayItems = _grep(joinArray, function (arrItm) {
+                        matchingArrayItems = _grep(opts.joinArray, function (arrItm) {
 
-                            return _stringEquals(arrItm[arrayField], dbItemFieldValue);
+                            return _stringEquals(arrItm[opts.arrayField], dbItemFieldValue);
                         });
 
                         if (matchingArrayItems.length > 0) {
 
-                            if (typeof transformFnOrSelectDbItemsOnly === "function") {
+                            if (typeof opts.transformFnOrSelectDbItemsOnly === "function") {
                                 // Validate transform function takes 2 arguments
-                                if (transformFnOrSelectDbItemsOnly.length !== 2) {
-                                    throw new Error("When transformFnOrSelectDbItemsOnly parameter is a function, it must take 2 arguments for the db item and array item");
+                                if (opts.transformFnOrSelectDbItemsOnly.length !== 2) {
+                                    throw new Error("When opts.transformFnOrSelectDbItemsOnly parameter is a function, it must take 2 arguments for the db item and array item");
                                 }
 
-                                dbItem = transformFnOrSelectDbItemsOnly.call(null, dbItem, matchingArrayItems[0]);
+                                dbItem = opts.transformFnOrSelectDbItemsOnly.call(null, dbItem, matchingArrayItems[0]);
                             }
-                            else if (transformFnOrSelectDbItemsOnly !== true) {
+                            else if (opts.transformFnOrSelectDbItemsOnly !== true) {
                                 // Merge the first matching array item into the db item
                                 _extend(dbItem, matchingArrayItems[0]);
                             }
@@ -427,8 +418,8 @@ var IndexedDbSvc = (function () {
                     });
 
                     // Sort
-                    if (orderBy != null) {
-                        _sortResultItems(joinedItems, orderBy, sortAscending);
+                    if (opts.orderBy != null) {
+                        _sortResultItems(joinedItems, opts.orderBy, opts.sortAscending);
                     }
 
                     // Resolve
@@ -440,26 +431,32 @@ var IndexedDbSvc = (function () {
 
     /**
      * Queries left and right stores (tables), then left-joins the results and returns all matching left store items, optionally merged with any joined right store items.
-     * @param {string} leftStoreName Name of the left store.
-     * @param {function} [leftFilterFn] Optional function to filter items in the left store.
-     * @param {string} leftJoinField Name of the field in the left store's items to join to the right store's items.
-     * @param {string} rightStoreName Name of the right store.
-     * @param {function} [rightFilterFn] Optional function to filter items in the right store.
-     * @param {string} rightJoinField Name of the field in the right store's items to join to the left store's items.
-     * @param {function|boolean} transformFnOrSelectDbItemsOnly Optional function to transform each item before adding it to the result array. Or pass true to return just the left items. Or pass null/false to return the left items merged with the matching right items.
-     * @param {function|string|array<string>} [orderBy] Either a function to sort items, a string naming 1 field to sort by, or an array of strings naming multiple fields to sort by, or true to sort string array by default ascii character order.
-     * @param {boolean} [sortAscending] Optional Flag specifying whether to sort in ascending order (default) or descending.
+     * @param {selectLeftJoinOptions} options Set of options for controlling the results.
      */
-    IndexedDbSvc.prototype.selectLeftJoin = function (leftStoreName, leftFilterFn, leftJoinField, rightStoreName, rightFilterFn, rightJoinField, transformFnOrSelectLeftItemsOnly, orderBy, sortAscending) {
+    IndexedDbSvc.prototype.selectLeftJoin = function (options) {
+
+        options = options || {};
+
+        var opts = {
+            leftStoreName: options.leftStoreName,
+            leftFilterFn: options.leftFilterFn,
+            leftJoinField: options.leftJoinField,
+            rightStoreName: options.rightStoreName,
+            rightFilterFn: options.rightFilterFn,
+            rightJoinField: options.rightJoinField,
+            transformFnOrSelectDbItemsOnly: options.transformFnOrSelectDbItemsOnly,
+            orderBy: options.orderBy,
+            sortAscending: options.sortAscending
+        };
 
         var self = this;
 
         return new Promise(function (resolve, reject) {
 
-            self.select(leftStoreName, leftFilterFn)
+            self.select(opts.leftStoreName, { filterFn: opts.leftFilterFn })
                 .then(function (leftItems) {
 
-                    return self.select(rightStoreName, rightFilterFn)
+                    return self.select(opts.rightStoreName, opts.rightFilterFn)
                         .then(function (rightItems) {
 
                             return [leftItems, rightItems];
@@ -475,11 +472,11 @@ var IndexedDbSvc = (function () {
 
                     _forEach(leftItems, function (idx, leftItem) {
 
-                        leftJoinFieldValue = leftItem[leftJoinField];
+                        leftJoinFieldValue = leftItem[opts.leftJoinField];
 
                         matchingRightItems = _grep(rightItems, function (arrItm) {
 
-                            return _stringEquals(arrItm[rightJoinField], leftJoinFieldValue);
+                            return _stringEquals(arrItm[opts.rightJoinField], leftJoinFieldValue);
                         });
 
                         if (matchingRightItems.length > 0) {
@@ -488,15 +485,15 @@ var IndexedDbSvc = (function () {
 
                                 var itemToAdd = {};
 
-                                if (typeof transformFnOrSelectLeftItemsOnly === "function") {
+                                if (typeof opts.transformFnOrSelectLeftItemsOnly === "function") {
                                     // Validate that the transform function takes 2 arguments
-                                    if (transformFnOrSelectLeftItemsOnly.length !== 2) {
+                                    if (opts.transformFnOrSelectLeftItemsOnly.length !== 2) {
                                         throw new Error("When transformFnOrSelectDbItemsOnly parameter is a function, it must take 2 arguments for the left and right items");
                                     }
 
-                                    itemToAdd = transformFnOrSelectLeftItemsOnly.call(null, leftItem, rightItem);
+                                    itemToAdd = opts.transformFnOrSelectLeftItemsOnly.call(null, leftItem, rightItem);
                                 }
-                                else if (transformFnOrSelectLeftItemsOnly !== true) {
+                                else if (opts.transformFnOrSelectLeftItemsOnly !== true) {
                                     // Merge the matching right item into a copy of the left item
                                     _extend(itemToAdd, leftItem);
                                     _extend(itemToAdd, rightItem);
@@ -509,15 +506,15 @@ var IndexedDbSvc = (function () {
                                 joinedItems.push(itemToAdd);
                             });
 
-                            //if (typeof transformFnOrSelectDbItemsOnly === "function") {
+                            //if (typeof opts.transformFnOrSelectDbItemsOnly === "function") {
                             //    // Validate that the transform function takes 2 arguments
-                            //    if (transformFnOrSelectDbItemsOnly.length !== 2) {
+                            //    if (opts.transformFnOrSelectDbItemsOnly.length !== 2) {
                             //        throw new Error("When transformFnOrSelectDbItemsOnly parameter is a function, it must take 2 arguments for the left and right items");
                             //    }
 
-                            //    leftItem = transformFnOrSelectDbItemsOnly.call(null, leftItem, matchingRightItems[0]);
+                            //    leftItem = opts.transformFnOrSelectDbItemsOnly.call(null, leftItem, matchingRightItems[0]);
                             //}
-                            //else if (transformFnOrSelectDbItemsOnly !== true) {
+                            //else if (opts.transformFnOrSelectDbItemsOnly !== true) {
                             //    // Merge the first matching right item into the left item
                             //    _extend(leftItem, matchingRightItems[0]);
                             //}
@@ -534,8 +531,8 @@ var IndexedDbSvc = (function () {
                     });
 
                     // Sort
-                    if (orderBy != null) {
-                        _sortResultItems(joinedItems, orderBy, sortAscending);
+                    if (opts.orderBy != null) {
+                        _sortResultItems(joinedItems, opts.orderBy, opts.sortAscending);
                     }
 
                     // Resolve
@@ -544,7 +541,7 @@ var IndexedDbSvc = (function () {
                 })
                 .catch(function (reason) {
 
-                    console.error("IndexedDbSvc.SelectLeftJoin - failed " + leftStoreName + " " + rightStoreName);
+                    console.error("IndexedDbSvc.selectLeftJoin - failed " + opts.leftStoreName + " " + opts.rightStoreName);
                     reject(reason);
                 });
 
@@ -553,9 +550,9 @@ var IndexedDbSvc = (function () {
 
     /**
      * Saves data to the given object store.
-     * @param {string|Array<string>} storeName The IndexedDB store/table name.
-     * @param {object|Array} dbData The object(s) to save - a single item; an array of items; an array of item arrays for each store.
-     * @returns {promise} Returns a Promise that is resolved when the async store operation completes.
+     * @param {string|ArrayLike<string>} storeName The IndexedDB store/table name.
+     * @param {object|ArrayLike} dbData The object(s) to save - a single item; an array of items; an array of item arrays for each store.
+     * @returns {Promise} Returns a Promise that is resolved when the async store operation completes.
      */
     IndexedDbSvc.prototype.store = function (storeName, dbData) {
 
@@ -703,7 +700,7 @@ var IndexedDbSvc = (function () {
      * Deletes from given store the rows whose primary-key index value matches one of the specified values. Returns a Promise which handles the async operation.
      * @param {string} storeName The IndexedDB store/table name.
      * @param {any|array<any>} primaryKeyVals A single, or array of, primary key values identifying the rows to delete.
-     * @returns {promise} Promise that is resolved when the async store operation completes.
+     * @returns {Promise} Promise that is resolved when the async store operation completes.
      */
     IndexedDbSvc.prototype.delete = function (storeName, /*indexName,*/ primaryKeyVals) {
 
@@ -773,7 +770,7 @@ var IndexedDbSvc = (function () {
     /**
     * Deletes all rows from (truncates) the given store (table). Returns a Promise which handles the async operation.
     * @param {string} storeName The IndexedDB store (table) name.
-    * @returns {promise} Promise that is resolved when the async operation completes.
+    * @returns {Promise} Promise that is resolved when the async operation completes.
     */
     IndexedDbSvc.prototype.truncate = function (storeName) {
 
@@ -838,7 +835,7 @@ var IndexedDbSvc = (function () {
      * @param {string} storeName Name of the IndexedDB store (table) to update.
      * @param {string|array<string>|function} primaryKeyValsOrFilterFn A single, or array of, primary key values identifying the rows to update, or a function describing which rows to update.
      * @param {object} updateObj An object describing the fields and values to update.
-     * @returns {promise} Promise that is resolved when the async store operation completes.
+     * @returns {Promise} Promise that is resolved when the async store operation completes.
     */
     IndexedDbSvc.prototype.update = function (storeName, primaryKeyValsOrFilterFn, updateObj) {
 
@@ -1309,161 +1306,6 @@ var IndexedDbSvc = (function () {
         });
 
         console.log("Created store " + storeName);
-    };
-
-    /**
-     * Does the low-level work of querying IndexedDB.
-     * @param {string} storeName Name of the store (table) to query.
-     * @param {string} indexName Optional name of index to search in.
-     * @param {any} keyRange A key range can be a single value or a range with upper and lower bounds or endpoints. If the key range has both upper and lower bounds, then it is bounded; if it has no bounds, it is unbounded. A bounded key range can either be open (the endpoints are excluded) or closed (the endpoints are included).
-     */
-    var _queryIndexedDB = function (storeName, indexName, keyRange) {
-
-        return new Promise(function (resolve, reject) {
-
-            /** @type {IDBOpenDBRequest} */
-            var openDbRequest = indexedDB.open(_dbName);
-
-            /** @param {Event} event */
-            openDbRequest.onsuccess = function (event) {
-
-                try {
-                    /** @type {IDBDatabase} */
-                    var db = event.target.result;
-
-                    /** @type {IDBTransaction} */
-                    var trans = db.transaction(storeName, "readonly");
-
-                    if (trans) {
-                        trans.oncomplete = function () {
-                            db.close();
-                        };
-
-                        trans.onabort = function (evt) {
-
-                            var storeName = "", keyPath = "", error = "";
-
-                            try {
-                                storeName = evt.target.source.name;
-                                keyPath = evt.target.source.keyPath;
-                                error = evt.target.error;
-                            } catch (e) {
-                            }
-
-                            var txErr = "IndexedDbSvc._queryIndexedDB transaction abort at " + storeName + "." + keyPath + ": " + error;
-                            console.error(txErr);
-
-                            db.close();
-
-                            reject(txErr);
-                        };
-
-                        trans.onerror = function (evt) {
-
-                            var storeName = "", keyPath = "", error = "";
-
-                            try {
-                                storeName = evt.target.source.name;
-                                keyPath = evt.target.source.keyPath;
-                                error = evt.target.error;
-                            } catch (e) {
-                            }
-
-                            var txErr = "IndexedDbSvc._queryIndexedDB transaction error at " + storeName + "." + keyPath + ": " + error;
-                            console.error(txErr);
-
-                            db.close();
-
-                            reject(txErr);
-                        };
-
-                        /** @type {IDBObjectStore} */
-                        var objectStore = trans.objectStore(storeName);
-
-                        if (indexName) {
-                            /** @type {IDBIndex} */
-                            var index;
-
-                            try {
-                                index = objectStore.index(indexName);
-                            }
-                            catch (e) {
-                            }
-                        }
-
-                        /** @type {IDBKeyRange} */
-                        var range;
-
-                        if (keyRange) {
-                            try {
-                                range = IDBKeyRange.only(keyRange);
-                            } catch (e) {
-                            }
-                        }
-
-                        /** @type {IDBRequest} */
-                        var cursorRequest;
-
-                        if (index && range) {
-                            cursorRequest = index.openCursor(range);
-                        }
-                        else if (index) {
-                            cursorRequest = index.openCursor();
-                        }
-                        else if (range) {
-                            cursorRequest = objectStore.openCursor(range);
-                        }
-                        else {
-                            cursorRequest = objectStore.openCursor();
-                        }
-
-                        /** @type {[]} */
-                        var results = [];
-
-                        cursorRequest.onsuccess = function () {
-
-                            /** @type {IDBCursorWithValue} */
-                            var cursor = cursorRequest.result;
-
-                            if (cursor) {
-                                results.push(cursor.value);
-                                cursor.continue();
-                            }
-                            else {
-                                resolve(results);
-                            }
-
-                            db.close();
-                        };
-                    }
-                } catch (e) {
-                    var err = storeName + " store; " + e.name + "; " + e.message;
-                    console.error(err);
-                    reject(err);
-                }
-            };
-
-            /**
-             * DB open request on-blocked handler.
-             * @param {Event} evt
-             */
-            openDbRequest.onblocked = function (evt) {
-
-                console.error(evt);
-                reject(evt);
-            };
-
-            /**
-             * DB open request on-error handler.
-             * @param {Event} evt
-             */
-            openDbRequest.onerror = function (evt) {
-
-                console.error(evt);
-                reject(evt);
-            };
-
-        });
     };
 
     /**

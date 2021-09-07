@@ -39,7 +39,7 @@ describe("IndexedDbSvc", function () {
             });
     });
 
-    describe("DatabaseExists", function () {
+    describe("databaseExists", function () {
 
         it("should return false when called with non-existant database name", function (done) {
 
@@ -63,7 +63,7 @@ describe("IndexedDbSvc", function () {
 
     });
 
-    describe("StoreExists", function () {
+    describe("storeExists", function () {
 
         it("should return false when called with non-existant store name", function (done) {
 
@@ -118,7 +118,7 @@ describe("IndexedDbSvc", function () {
         });
     });
 
-    describe("StoreMany", function () {
+    describe("storeMany", function () {
 
         it("should store in a single table", function (done) {
 
@@ -165,7 +165,7 @@ describe("IndexedDbSvc", function () {
         });
     });
 
-    describe("Select", function () {
+    describe("select", function () {
 
         it("should return all rows when no filter function provided", function (done) {
 
@@ -180,7 +180,7 @@ describe("IndexedDbSvc", function () {
 
         it("should return only matching rows when filter function provided", function (done) {
 
-            _indexedDbSvc.select("Customer", function (c) { return c.CustomerID === 123; })
+            _indexedDbSvc.select("Customer", { filterFn: function (c) { return c.CustomerID === 123; } })
                 .then(function (customers) {
 
                     expect(customers.length).toEqual(1);
@@ -194,33 +194,52 @@ describe("IndexedDbSvc", function () {
 
             _indexedDbSvc.select(
                 "Customer",
-                null,
-                null,
-                "CustomerID",
-                false)
-                .then(function (customers) {
+                {
+                    orderBy: "CustomerID",
+                    sortAscending: false
+                }
+            ).then(function (customers) {
 
-                    expect(customers.length).toEqual(5);
-                    expect(customers[0].CustomerID).toEqual(127);
+                expect(customers.length).toEqual(5);
+                expect(customers[0].CustomerID).toEqual(127);
 
-                    done();
-                })
+                done();
+            })
         });
     });
 
-    describe("SelectLeftJoin", function () {
+    describe("selectLeftJoin", function () {
 
         it("Returns all left items for each matching right item", function (done) {
 
-            _indexedDbSvc.selectLeftJoin("Customer", function (c) { return c.CustomerID === 127; }, "CustomerID", "Policy", null, "CustomerID", false, null, null)
+            /** @type {selectLeftJoinOptions} */
+            var options = {
+                leftStoreName: "Customer",
+                leftFilterFn: function (c) { return [123, 127].indexOf(c.CustomerID) > -1; },
+                leftJoinField: "CustomerID",
+                rightStoreName: "Policy",
+                rightFilterFn: null,
+                rightJoinField: "CustomerID",
+                sortAscending: false,
+                transformFnOrSelectDbItemsOnly: null,
+                orderBy: null
+            };
+
+            _indexedDbSvc.selectLeftJoin(options)
                 .then(function (results) {
-                    
-                    expect(results.length).toEqual(2);
+
+                    expect(results.length).toEqual(3);
 
                     forEach(results, function (idx, item) {
 
-                        expect(item.CustomerID).toEqual(127);
-                        expect(item.PolicyID).toBeGreaterThan(0);
+                        if (item.CustomerID == 123) {
+                            expect(item.CustomerID).toBeGreaterThanOrEqual(123);
+                            expect(item.PolicyID).toBeUndefined();
+                        }
+                        else if (item.CustomerID == 127) {
+                            expect(item.CustomerID).toBeGreaterThanOrEqual(127);
+                            expect(item.PolicyID).toBeGreaterThan(0);
+                        }
                     });
 
                     done();
