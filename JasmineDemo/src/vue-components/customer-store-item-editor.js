@@ -19,31 +19,33 @@ Vue.component('customer-store-item-editor', {
         }
     },
     template: `
-<form>
-    <label class="col-xs-2 control-label fw-bold">{{customer.CustomerID > 0 ? 'Edit' : 'Add'}} Customer {{customer.CustomerName}}</label>
+<div>
+    <form>
+        <label class="col-xs-2 control-label fw-bold">{{customer.CustomerID > 0 ? 'Edit' : 'Add'}} Customer {{customer.CustomerName}}</label>
 
-    <div class="form-group row mb-1">
-        <label for="CustomerID" class="col-sm-2 col-form-label">ID</label>
-        <div class="col-sm-10">
-            <input type="text" readonly class="form-control-plaintext" xid="CustomerID" v-bind:value="customer.CustomerID" />
+        <div class="form-group row mb-1">
+            <label for="CustomerID" class="col-sm-2 col-form-label">ID</label>
+            <div class="col-sm-10">
+                <input type="text" readonly class="form-control-plaintext" xid="CustomerID" v-bind:value="customer.CustomerID" />
+            </div>
         </div>
-    </div>
-    <div class="form-group row mb-1">
-        <label for="CustomerName" class="col-sm-2 col-form-label">Name</label>
-        <div class="col-sm-10">
-            <input type="text" class="form-control" xid="CustomerName" placeholder="Name" v-bind:value="customer.CustomerName" />
+        <div class="form-group row mb-1">
+            <label for="CustomerName" class="col-sm-2 col-form-label">Name</label>
+            <div class="col-sm-10">
+                <input type="text" class="form-control" xid="CustomerName" placeholder="Name" v-bind:value="customer.CustomerName" />
+            </div>
         </div>
-    </div>
-    <div class="form-group row mb-1">
-        <label for="CustomerRef" class="col-sm-2 col-form-label">Ref</label>
-        <div class="col-sm-10">
-            <input type="text" class="form-control" xid="CustomerRef" placeholder="Ref" v-bind:value="customer.CustomerRef" />
+        <div class="form-group row mb-1">
+            <label for="CustomerRef" class="col-sm-2 col-form-label">Ref</label>
+            <div class="col-sm-10">
+                <input type="text" class="form-control" xid="CustomerRef" placeholder="Ref" v-bind:value="customer.CustomerRef" />
+            </div>
         </div>
-    </div>
-</form>
-<div class="row mb-1">
-    <div class="col-sm-3">
-        <button class="btn btn-primary btn-sm" v-on:click="saveCustomer">Save</button>
+    </form>
+    <div class="row mb-1">
+        <div class="col-sm-3">
+            <button class="btn btn-primary btn-sm" v-on:click="saveCustomer">Save</button>
+        </div>
     </div>
 </div>
 `

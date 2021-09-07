@@ -8,7 +8,7 @@ describe("IndexedDbSvc", function () {
 
     beforeAll(function (done) {
 
-        _indexedDbSvc.DeleteDatabase()
+        _indexedDbSvc.deleteDatabase()
             .then(function () {
 
                 var storeSpecs = [
@@ -32,7 +32,7 @@ describe("IndexedDbSvc", function () {
                     },
                 ];
 
-                return _indexedDbSvc.CreateDatabase(1, storeSpecs);
+                return _indexedDbSvc.createDatabase(1, storeSpecs);
             })
             .then(function () {
                 done();
@@ -45,7 +45,7 @@ describe("IndexedDbSvc", function () {
 
             var randomDbName = "foo" + new Date().getTime();
 
-            _indexedDbSvc.DatabaseExists(randomDbName)
+            _indexedDbSvc.databaseExists(randomDbName)
                 .then(function (exists) {
                     expect(exists).toBeFalse();
                     done();
@@ -54,7 +54,7 @@ describe("IndexedDbSvc", function () {
         });
 
         it("should return true when called with existing database name", function (done) {
-            _indexedDbSvc.DatabaseExists(dbName)
+            _indexedDbSvc.databaseExists(dbName)
                 .then(function (exists) {
                     expect(exists).toBeTrue();
                     done();
@@ -69,7 +69,7 @@ describe("IndexedDbSvc", function () {
 
             var randomStoreName = "foo" + new Date().getTime();
 
-            _indexedDbSvc.StoreExists(randomStoreName)
+            _indexedDbSvc.storeExists(randomStoreName)
                 .then(function (exists) {
                     expect(exists).toBeFalse();
                     done();
@@ -81,7 +81,7 @@ describe("IndexedDbSvc", function () {
 
             var existingStoreName = "Customer";
 
-            _indexedDbSvc.StoreExists(existingStoreName)
+            _indexedDbSvc.storeExists(existingStoreName)
                 .then(function (exists) {
                     expect(exists).toBeTrue();
                     done();
@@ -96,7 +96,7 @@ describe("IndexedDbSvc", function () {
 
             var customer = { CustomerID: 123, CustomerRef: "CUST003", CustomerName: "A Test" };
 
-            _indexedDbSvc.Store("Customer", customer).
+            _indexedDbSvc.store("Customer", customer).
                 then(function (qtyRowsStored) {
                     expect(qtyRowsStored).toEqual(1);
                     done();
@@ -110,7 +110,7 @@ describe("IndexedDbSvc", function () {
                 { CustomerID: 125, CustomerRef: "CUST005", CustomerName: "C Test" }
             ];
 
-            _indexedDbSvc.Store("Customer", customers).
+            _indexedDbSvc.store("Customer", customers).
                 then(function (qtyRowsStored) {
                     expect(qtyRowsStored).toEqual(2);
                     done();
@@ -124,7 +124,7 @@ describe("IndexedDbSvc", function () {
 
             var data = [["Customer", { CustomerID: 126, CustomerRef: "CUST006", CustomerName: "D Test" }]];
 
-            _indexedDbSvc.StoreMany(data).
+            _indexedDbSvc.storeMany(data).
                 then(function (allQuantitiesStored) {
 
                     var totalRows = 0;
@@ -150,7 +150,7 @@ describe("IndexedDbSvc", function () {
                 ]]
             ];
 
-            _indexedDbSvc.StoreMany(data).
+            _indexedDbSvc.storeMany(data).
                 then(function (allQuantitiesStored) {
 
                     var totalRows = 0;
@@ -169,7 +169,7 @@ describe("IndexedDbSvc", function () {
 
         it("should return all rows when no filter function provided", function (done) {
 
-            _indexedDbSvc.Select("Customer")
+            _indexedDbSvc.select("Customer")
                 .then(function (customers) {
 
                     expect(customers.length).toBeGreaterThan(0);
@@ -180,7 +180,7 @@ describe("IndexedDbSvc", function () {
 
         it("should return only matching rows when filter function provided", function (done) {
 
-            _indexedDbSvc.Select("Customer", function (c) { return c.CustomerID === 123; })
+            _indexedDbSvc.select("Customer", function (c) { return c.CustomerID === 123; })
                 .then(function (customers) {
 
                     expect(customers.length).toEqual(1);
@@ -192,7 +192,7 @@ describe("IndexedDbSvc", function () {
 
         it("should return items in descending order when orderBy field set and sortAscending flag to false", function (done) {
 
-            _indexedDbSvc.Select(
+            _indexedDbSvc.select(
                 "Customer",
                 null,
                 null,
@@ -212,7 +212,7 @@ describe("IndexedDbSvc", function () {
 
         it("Returns all left items for each matching right item", function (done) {
 
-            _indexedDbSvc.SelectLeftJoin("Customer", function (c) { return c.CustomerID === 127; }, "CustomerID", "Policy", null, "CustomerID", false, null, null)
+            _indexedDbSvc.selectLeftJoin("Customer", function (c) { return c.CustomerID === 127; }, "CustomerID", "Policy", null, "CustomerID", false, null, null)
                 .then(function (results) {
                     
                     expect(results.length).toEqual(2);

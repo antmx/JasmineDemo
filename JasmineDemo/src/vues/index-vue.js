@@ -71,7 +71,7 @@ var indexVue = new Vue({
         createDb: function () {
             var self = this;
 
-            this.idxDbSvc.CreateDatabase(1, this.storeSchemas)
+            this.idxDbSvc.createDatabase(1, this.storeSchemas)
                 .then(function (foo) {
                     self.dbCreated = true;
                     self.storeNames = [];
@@ -81,7 +81,7 @@ var indexVue = new Vue({
         deleteDb: function () {
             var self = this;
 
-            this.idxDbSvc.DeleteDatabase()
+            this.idxDbSvc.deleteDatabase()
                 .then(function (foo) {
                     self.dbCreated = false;
                     self.storeNames = [];
@@ -95,7 +95,7 @@ var indexVue = new Vue({
 
             this.storeData = [];
 
-            this.idxDbSvc.FetchAllStores()
+            this.idxDbSvc.fetchAllStores()
                 .then(function (storeNames) {
                     self.storeNames = storeNames;
 
@@ -113,7 +113,7 @@ var indexVue = new Vue({
 
             var self = this;
 
-            this.idxDbSvc.Select(storeName || this.activeStoreName)
+            this.idxDbSvc.select(storeName || this.activeStoreName)
                 .then(function (rows) {
                     self.storeData = rows;
                 });
@@ -140,7 +140,7 @@ var indexVue = new Vue({
                 return;
             }
 
-            this.idxDbSvc.StoreMany(dataToStore);
+            this.idxDbSvc.storeMany(dataToStore);
         },
 
         showStoreItemEditor: function (itemIdentifier) {
@@ -153,7 +153,7 @@ var indexVue = new Vue({
                 case "Customer":
                     if (itemIdentifier != null) {
                         this.idxDbSvc
-                            .Select("Customer", function (c) { return c.CustomerID == itemIdentifier; })
+                            .select("Customer", { filterFn: function (c) { return c.CustomerID == itemIdentifier; } })
                             .then(function (customers) {
                                 self.selectedCustomer = customers[0];
                             });
@@ -167,7 +167,7 @@ var indexVue = new Vue({
                 case "Policy":
                     if (itemIdentifier != null) {
                         this.idxDbSvc
-                            .Select("Policy", function (p) { return p.PolicyID == itemIdentifier; })
+                            .select("Policy", { filterFn: function (p) { return p.PolicyID == itemIdentifier; } })
                             .then(function (policies) {
                                 console.log("Selecting Policy " + policies[0].PolicyID);
                                 self.selectedPolicy = policies[0];

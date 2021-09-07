@@ -4,7 +4,19 @@
 */
 
 /**
- * Performs IndexedDB data CRUD tasks.
+ * Options for controlling the results of the {@link IndexedDbSvc.select} function.
+ * @typedef {Object} selectOptions
+ * @property { string } indexName - Optional. Name of index to search in.
+ * @property { IDBKeyRange } keyRange - Optional. A key range can be a single value or a range with upper and lower bounds or endpoints. If the key range has both upper and lower bounds, then it is bounded; if it has no bounds, it is unbounded. A bounded key range can either be open (the endpoints are excluded) or closed (the endpoints are included).
+ * @property { Function } filterFn - Optional. A function to filter items in the store being queried. Should be something like: function (elementOfArray[, indexInArray]) { return elementOfArray.pr_Deleted == "False"; })
+ * @property { Function } transformFn - Optional.  A function to transform each item before adding it to the result array. Pass null to return the original item. Should be something like: function (valueOfElement) { return new Genus.PriceMatrixRule(valueOfElement); }
+ * @property { Function|string|ArrayLike<string>|boolean } orderBy - Optional. Either a function to sort items, a string naming 1 field to sort by, or an array of strings naming multiple fields to sort by, or true to sort string array by default ascii character order.
+ * @property { boolean } sortAscending - Optional. A flag specifying whether to sort in ascending order (default) or descending.
+ * @property { boolean } returnFirstItemOnly - Optional. Pass true to have just the first result item returned; otherwise an array containing all results is returned.
+ */
+
+/**
+ * Performs IndexedDB data CRUD and schema tasks.
  */
 var IndexedDbSvc = (function () {
 
@@ -21,17 +33,40 @@ var IndexedDbSvc = (function () {
     }
 
     /**
-     * Performs a data query. Returns a Promise which is resolved when the async operation completes.
+     * Performs a data query on a store (table). Returns a Promise which is resolved when the async operation completes.
      * @param {string} storeName IndexedDB store (table) name to query.
-     * @param {function} [filterFn] Optional function to filter items in the store being queried.
-     * @param {function} [transformFn] Optional function to transform each item before adding it to the result array. Pass null to return the original item.
-     * @param {function|string|array<string>|boolean} [orderBy] Optional either a function to sort items, a string naming 1 field to sort by, or an array of strings naming multiple fields to sort by, or true to sort string array by default ascii character order.
-     * @param {bool} [sortAscending] Optional Flag specifying whether to sort in ascending order (default) or descending.
-     * @param {boolean} [returnFirstItemOnly] Pass true to have just the first result item returned; otherwise an array containing all results is returned.
+     * @param {selectOptions} [options] Set of options for controlling the results.
      * @returns {promise} Promise that is resolved when the async query operation completes.
      */
-    IndexedDbSvc.prototype.Select = function (storeName, filterFn, transformFn, orderBy, sortAscending, returnFirstItemOnly) {
+    IndexedDbSvc.prototype.select = function (storeName, options) {
 
+        options = options || {};
+
+        var opts = {
+
+            /** @type {string} */
+            indexName: options.indexName,
+
+            /** @type {IDBKeyRange} */
+            keyRange: options.keyRange,
+
+            /** @type {Function} */
+            filterFn: options.filterFn,
+
+            /** @type {Function} */
+            transformFn: options.transformFn,
+
+            /** @type {Function|string|ArrayLike<string>|boolean} */
+            orderBy: options.orderBy,
+
+            /** @type {boolean} */
+            sortAscending: options.sortAscending,
+
+            /** @type {boolean} */
+            returnFirstItemOnly: options.returnFirstItemOnly
+        };
+
+        /*
         return new Promise(function (resolve, reject) {
 
             _queryIndexedDB(storeName, null, null)
@@ -76,6 +111,193 @@ var IndexedDbSvc = (function () {
                 })
                 .catch(reject);
         });
+        */
+
+        return new Promise(function (resolve, reject) {
+
+            /** @type {IDBOpenDBRequest} */
+            var openDbRequest = indexedDB.open(_dbName);
+
+            /** @param {Event} event */
+            openDbRequest.onsuccess = function (event) {
+
+                try {
+                    /** @type {IDBDatabase} */
+                    var db = event.target.result;
+
+                    /** @type {IDBTransaction} */
+                    var trans = db.transaction(storeName, "readonly");
+
+                    if (trans) {
+
+                        trans.oncomplete = function () {
+                            db.close();
+                        };
+
+                        trans.onabort = function (evt) {
+
+                            var storeName = "", keyPath = "", error = "";
+
+                            try {
+                                storeName = evt.target.source.name;
+                                keyPath = evt.target.source.keyPath;
+                                error = evt.target.error;
+                            } catch (e) {
+                            }
+
+                            var txErr = "IndexedDbSvc._queryIndexedDB transaction abort at " + storeName + "." + keyPath + ": " + error;
+                            console.error(txErr);
+
+                            db.close();
+
+                            reject(txErr);
+                        };
+
+                        trans.onerror = function (evt) {
+
+                            var storeName = "", keyPath = "", error = "";
+
+                            try {
+                                storeName = evt.target.source.name;
+                                keyPath = evt.target.source.keyPath;
+                                error = evt.target.error;
+                            } catch (e) {
+                            }
+
+                            var txErr = "IndexedDbSvc._queryIndexedDB transaction error at " + storeName + "." + keyPath + ": " + error;
+                            console.error(txErr);
+
+                            db.close();
+
+                            reject(txErr);
+                        };
+
+                        /** @type {IDBObjectStore} */
+                        var objectStore = trans.objectStore(storeName);
+
+                        if (opts.indexName) {
+                            /** @type {IDBIndex} */
+                            var index;
+
+                            try {
+                                index = objectStore.index(opts.indexName);
+                            }
+                            catch (e) {
+                            }
+                        }
+
+                        /** @type {IDBKeyRange} */
+                        var range;
+
+                        if (opts.keyRange) {
+                            try {
+                                range = IDBKeyRange.only(opts.keyRange);
+                            } catch (e) {
+                            }
+                        }
+
+                        /** @type {IDBRequest} */
+                        var cursorRequest;
+
+                        if (index && range) {
+                            cursorRequest = index.openCursor(range);
+                        }
+                        else if (index) {
+                            cursorRequest = index.openCursor();
+                        }
+                        else if (range) {
+                            cursorRequest = objectStore.openCursor(range);
+                        }
+                        else {
+                            cursorRequest = objectStore.openCursor();
+                        }
+
+                        /** @type {[]} */
+                        var resultItems = [];
+
+                        cursorRequest.onsuccess = function () {
+
+                            /** @type {IDBCursorWithValue} */
+                            var cursor = cursorRequest.result;
+
+                            if (cursor) {
+                                resultItems.push(cursor.value);
+                                cursor.continue();
+                            }
+                            else {
+
+                                db.close();
+
+                                // filterFn should be something like
+                                // function (elementOfArray[, indexInArray]) { return elementOfArray.pr_Deleted == "False"; })
+
+                                // transformFn should be something like
+                                // function (valueOfElement) { return new Genus.PriceMatrixRule(valueOfElement); }
+
+                                // Apply filter
+                                if (typeof opts.filterFn === "function") {
+                                    resultItems = _grep(resultItems, opts.filterFn);
+                                }
+
+                                // Apply transform to each element
+                                if (typeof opts.transformFn === "function") {
+                                    var transformed;
+                                    var valueOfElement;
+
+                                    for (var idx = 0; idx < resultItems.length; idx++) {
+                                        var valueOfElement = resultItems[idx];
+                                        transformed = opts.transformFn.call(null, valueOfElement);
+                                        resultItems[idx] = transformed;
+                                    }
+                                }
+
+                                // Sort
+                                if (opts.orderBy != null) {
+                                    _sortResultItems(resultItems, opts.orderBy, opts.sortAscending);
+                                }
+
+                                if (opts.returnFirstItemOnly) {
+                                    // Return just the first result item, which could be null if no results
+                                    var first = resultItems[0];
+                                    resolve(first);
+                                }
+                                else {
+                                    resolve(resultItems);
+                                }
+                            }
+
+                            //db.close();
+                        };
+                    }
+                } catch (e) {
+                    var err = storeName + " store; " + e.name + "; " + e.message;
+                    console.error(err);
+                    reject(err);
+                }
+            };
+
+            /**
+             * DB open request on-blocked handler.
+             * @param {Event} evt
+             */
+            openDbRequest.onblocked = function (evt) {
+
+                console.error(evt);
+                reject(evt);
+            };
+
+            /**
+             * DB open request on-error handler.
+             * @param {Event} evt
+             */
+            openDbRequest.onerror = function (evt) {
+
+                console.error(evt);
+                reject(evt);
+            };
+
+        });
+
     };
 
     /**
@@ -90,13 +312,13 @@ var IndexedDbSvc = (function () {
      * @param {string} [arrayField] The array field name to join with dbField. Ignore this param if you want to compare against array items themselves, e.g. array of int IDs.
      * @returns {promise} Promise that is resolved when the async query operation completes.
      */
-    IndexedDbSvc.prototype.SelectInnerJoin = function (storeName, filterFn, transformFnOrSelectDbItemsOnly, orderBy, sortAscending, joinArray, dbField, arrayField) {
+    IndexedDbSvc.prototype.selectInnerJoin = function (storeName, filterFn, transformFnOrSelectDbItemsOnly, orderBy, sortAscending, joinArray, dbField, arrayField) {
 
         var self = this;
 
         return new Promise(function (resolve, reject) {
 
-            self.Select(storeName, filterFn)
+            self.select(storeName, filterFn)
                 .then(function (dbItems) {
 
                     var joinedItems = [];
@@ -162,13 +384,13 @@ var IndexedDbSvc = (function () {
      * @param {string} arrayField The array field name to join with dbField.
      * @returns {promise} Promise that is resolved when the async query operation completes.
      */
-    IndexedDbSvc.prototype.SelectLeftJoinOnArray = function (storeName, filterFn, transformFnOrSelectDbItemsOnly, orderBy, sortAscending, joinArray, dbField, arrayField) {
+    IndexedDbSvc.prototype.selectLeftJoinOnArray = function (storeName, filterFn, transformFnOrSelectDbItemsOnly, orderBy, sortAscending, joinArray, dbField, arrayField) {
 
         var self = this;
 
         return new Promise(function (resolve, reject) {
 
-            self.Select(storeName, filterFn)
+            self.select(storeName, filterFn)
                 .then(function (dbItems) {
 
                     var joinedItems = [];
@@ -228,16 +450,16 @@ var IndexedDbSvc = (function () {
      * @param {function|string|array<string>} [orderBy] Either a function to sort items, a string naming 1 field to sort by, or an array of strings naming multiple fields to sort by, or true to sort string array by default ascii character order.
      * @param {boolean} [sortAscending] Optional Flag specifying whether to sort in ascending order (default) or descending.
      */
-    IndexedDbSvc.prototype.SelectLeftJoin = function (leftStoreName, leftFilterFn, leftJoinField, rightStoreName, rightFilterFn, rightJoinField, transformFnOrSelectLeftItemsOnly, orderBy, sortAscending) {
+    IndexedDbSvc.prototype.selectLeftJoin = function (leftStoreName, leftFilterFn, leftJoinField, rightStoreName, rightFilterFn, rightJoinField, transformFnOrSelectLeftItemsOnly, orderBy, sortAscending) {
 
         var self = this;
 
         return new Promise(function (resolve, reject) {
 
-            self.Select(leftStoreName, leftFilterFn)
+            self.select(leftStoreName, leftFilterFn)
                 .then(function (leftItems) {
 
-                    return self.Select(rightStoreName, rightFilterFn)
+                    return self.select(rightStoreName, rightFilterFn)
                         .then(function (rightItems) {
 
                             return [leftItems, rightItems];
@@ -335,7 +557,7 @@ var IndexedDbSvc = (function () {
      * @param {object|Array} dbData The object(s) to save - a single item; an array of items; an array of item arrays for each store.
      * @returns {promise} Returns a Promise that is resolved when the async store operation completes.
      */
-    IndexedDbSvc.prototype.Store = function (storeName, dbData) {
+    IndexedDbSvc.prototype.store = function (storeName, dbData) {
 
         return new Promise(function (resolve, reject) {
 
@@ -442,7 +664,7 @@ var IndexedDbSvc = (function () {
      * @param {ArrayLike} allStoreNamesAndDatas An array keys (store names) and data values (array or single object) to store in each.
      * @returns {Promise} A Promsie that is resolved when all stores have been written to.
     */
-    IndexedDbSvc.prototype.StoreMany = function (allStoreNamesAndDatas) {
+    IndexedDbSvc.prototype.storeMany = function (allStoreNamesAndDatas) {
 
         var self = this;
         var allPromises = [];
@@ -457,7 +679,7 @@ var IndexedDbSvc = (function () {
 
                     //console.log("IndexedDbSvc.StoreMany - storing " + nextTableAndData[0] + "...");
 
-                    self.Store(nextStoreAndData[0], nextStoreAndData[1])
+                    self.store(nextStoreAndData[0], nextStoreAndData[1])
                         .then(function (qtyRowsStored) {
                             resolve(qtyRowsStored);
                         })
@@ -483,7 +705,7 @@ var IndexedDbSvc = (function () {
      * @param {any|array<any>} primaryKeyVals A single, or array of, primary key values identifying the rows to delete.
      * @returns {promise} Promise that is resolved when the async store operation completes.
      */
-    IndexedDbSvc.prototype.Delete = function (storeName, /*indexName,*/ primaryKeyVals) {
+    IndexedDbSvc.prototype.delete = function (storeName, /*indexName,*/ primaryKeyVals) {
 
         return new Promise(function (resolve, reject) {
 
@@ -501,7 +723,7 @@ var IndexedDbSvc = (function () {
                     var qtyRowsToDelete = 0;
 
                     if (!Array.isArray(primaryKeyVals)) {
-                        // Make array of 1 item
+                        // Make an array containing the one item
                         primaryKeyVals = [primaryKeyVals];
                         qtyRowsToDelete = 1;
                     }
@@ -553,7 +775,7 @@ var IndexedDbSvc = (function () {
     * @param {string} storeName The IndexedDB store (table) name.
     * @returns {promise} Promise that is resolved when the async operation completes.
     */
-    IndexedDbSvc.prototype.Truncate = function (storeName) {
+    IndexedDbSvc.prototype.truncate = function (storeName) {
 
         return new Promise(function (resolve, reject) {
 
@@ -618,7 +840,7 @@ var IndexedDbSvc = (function () {
      * @param {object} updateObj An object describing the fields and values to update.
      * @returns {promise} Promise that is resolved when the async store operation completes.
     */
-    IndexedDbSvc.prototype.Update = function (storeName, primaryKeyValsOrFilterFn, updateObj) {
+    IndexedDbSvc.prototype.update = function (storeName, primaryKeyValsOrFilterFn, updateObj) {
 
         var self = this;
 
@@ -628,7 +850,7 @@ var IndexedDbSvc = (function () {
                 ProceedWithUpdate(primaryKeyValsOrFilterFn);
             }
             else {
-                self.GetPrimaryKeyName(storeName)
+                self.getPrimaryKeyName(storeName)
                     .then(function (pkName) {
 
                         if (typeof primaryKeyValsOrFilterFn === "string") {
@@ -655,7 +877,7 @@ var IndexedDbSvc = (function () {
             function ProceedWithUpdate(filterFn) {
 
                 // Find the records to update
-                self.Select(storeName, filterFn)
+                self.select(storeName, filterFn)
                     .then(function (itemsToUpdate) {
                         if (itemsToUpdate && itemsToUpdate.length > 0) {
 
@@ -666,7 +888,7 @@ var IndexedDbSvc = (function () {
                             });
 
                             // Store in db again
-                            self.Store(storeName, itemsToUpdate)
+                            self.store(storeName, itemsToUpdate)
                                 .then(function () {
                                     // Indicate success and number of rows updated
                                     resolve(itemsToUpdate.length);
@@ -691,7 +913,7 @@ var IndexedDbSvc = (function () {
      * Gets the name of the given store's (table) primary key index.
      * @param {string} storeName The name of the store (table).
      */
-    IndexedDbSvc.prototype.GetPrimaryKeyName = function (storeName) {
+    IndexedDbSvc.prototype.getPrimaryKeyName = function (storeName) {
 
         return new Promise(function (resolve, reject) {
 
@@ -811,7 +1033,7 @@ var IndexedDbSvc = (function () {
      * Determines if an IndexedDB database with given name exists.
      * @param {string} dbName Name of the database to look for.
      */
-    IndexedDbSvc.prototype.DatabaseExists = function (dbName) {
+    IndexedDbSvc.prototype.databaseExists = function (dbName) {
 
         return new Promise(function (resolve, reject) {
 
@@ -843,7 +1065,7 @@ var IndexedDbSvc = (function () {
      * @param {string} storeName Name of the sotre (table), e.g. 'Customer'
      * @param {number} [versionNum=1] Optional db version number. 1 is the default value if no value provided.
      */
-    IndexedDbSvc.prototype.StoreExists = function (storeName, versionNum) {
+    IndexedDbSvc.prototype.storeExists = function (storeName, versionNum) {
 
         if (versionNum == null) {
             versionNum = 1;
@@ -893,7 +1115,7 @@ var IndexedDbSvc = (function () {
      * Gets a list of names of all the stores (tables) in the database.
      * @param {any} [versionNum=1] Optional db version number. 1 is the default value if no value provided.
      */
-    IndexedDbSvc.prototype.FetchAllStores = function (versionNum) {
+    IndexedDbSvc.prototype.fetchAllStores = function (versionNum) {
 
         if (versionNum == null) {
             versionNum = 1;
@@ -934,7 +1156,7 @@ var IndexedDbSvc = (function () {
     };
 
     /** Deletes the current database */
-    IndexedDbSvc.prototype.DeleteDatabase = function () {
+    IndexedDbSvc.prototype.deleteDatabase = function () {
 
         return new Promise(function (resolve, reject) {
 
@@ -968,7 +1190,7 @@ var IndexedDbSvc = (function () {
      * @param {number} versionNum
      * @param {any} storeSpecs
      */
-    IndexedDbSvc.prototype.CreateDatabase = function (versionNum, storeSpecs) {
+    IndexedDbSvc.prototype.createDatabase = function (versionNum, storeSpecs) {
 
         if (versionNum == null) {
             versionNum = 1;
@@ -1002,7 +1224,7 @@ var IndexedDbSvc = (function () {
 
                 // Create a store (table) for each item
                 _forEach(storeSpecs, function (idx, spec) {
-                    self.CreateStore(db, spec.storeName, spec.indexes, spec.addModifiedDataCol);
+                    self.createStore(db, spec.storeName, spec.indexes, spec.addModifiedDataCol);
                 });
 
                 openDbRequestStatus = "ok";
@@ -1046,7 +1268,7 @@ var IndexedDbSvc = (function () {
      * @param {boolean} addModifiedDataCol If true, also adds a ModifiedData column to the store.
      * @param {string|Array<string>} uniqueKeyPath Optional collection of names of the columns in the store that can only contain unique values.
      */
-    IndexedDbSvc.prototype.CreateStore = function (db, storeName, indexes, addModifiedDataCol) {
+    IndexedDbSvc.prototype.createStore = function (db, storeName, indexes, addModifiedDataCol) {
 
         var indexesToCreate = [];
 
@@ -1385,7 +1607,7 @@ var IndexedDbSvc = (function () {
     /**
      * Sorts an array of query result items.
      * @param {[]} resultIems The items to sort.
-     * @param {function|string|array<string>|boolean} orderBy Either a function to sort items, a string naming 1 field to sort by, or an array of strings naming multiple fields to sort by, or true to sort string array by default ascii character order.
+     * @param {function|string|ArrayLike<string>|boolean} orderBy Either a function to sort items, a string naming 1 field to sort by, or an array of strings naming multiple fields to sort by, or true to sort string array by default ascii character order.
      * @param {bool} [sortAscending] Optional Flag specifying whether to sort in ascending order (default) or descending.
      */
     var _sortResultItems = function (resultIems, orderBy, sortAscending) {
