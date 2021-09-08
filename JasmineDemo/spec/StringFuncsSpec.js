@@ -44,21 +44,21 @@ describe("stringFuncs", function () {
             expect(result).toBe(true);
         });
 
-        it("should return true for whitespace only", function () {
+        it("should return true for whitespace-only", function () {
 
             var result = stringIsNullOrEmpty("  ");
 
             expect(result).toBe(true);
         });
 
-        it("should return true for non-empty", function () {
+        it("should return false for non-empty", function () {
 
             var result = stringIsNullOrEmpty("foo");
 
             expect(result).toBe(false);
         });
 
-        it("should return true for non-empty that includes whitespace", function () {
+        it("should return false for non-empty that includes whitespace", function () {
 
             var result = stringIsNullOrEmpty("   foo   bar   ");
 
