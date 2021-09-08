@@ -87,7 +87,7 @@ function JoinObjectArrays(data1, data2, joinBy1, joinBy2) {
             var data2MapIdx = $.inArray(data1[data1Idx][joinBy1], data2Map);
 
             if (data2MapIdx >= 0) {
-                if (StringIsNullOrEmpty(data1[data1Idx][joinBy1]) || StringIsNullOrEmpty(data2[data2MapIdx][joinBy2])) {
+                if (stringIsNullOrEmpty(data1[data1Idx][joinBy1]) || stringIsNullOrEmpty(data2[data2MapIdx][joinBy2])) {
                     continue;
                 }
 
@@ -113,7 +113,7 @@ function LeftOuterJoinObjectArrays(data1, data2, joinBy1, joinBy2) {
             var y = $.inArray(data1[x][joinBy1], arrMap);
 
             if (y >= 0) {
-                if (StringIsNullOrEmpty(data1[x][joinBy1]) || StringIsNullOrEmpty(data2[y][joinBy2]))
+                if (stringIsNullOrEmpty(data1[x][joinBy1]) || stringIsNullOrEmpty(data2[y][joinBy2]))
                     continue;
 
                 var lineData = $.extend({}, data1[x], data2[y]);
@@ -150,7 +150,7 @@ function LeftOuterJoinObjectArrays2(array1, array2, joinBy1, joinBy2, matchOnNul
         });
 
         for (var x = 0; x < array1.length; x++) {
-            if (!StringIsNullOrEmpty(array1[x][joinBy1])) {
+            if (!stringIsNullOrEmpty(array1[x][joinBy1])) {
                 var y = $.inArray(array1[x][joinBy1].toString(), arrMap);
 
                 if (y >= 0) {
@@ -226,7 +226,7 @@ function LoadExternalPage(element, source, execDataMain) {
             // Look for data-main function
             var mainFunc = $(element).find("script").attr("data-main");
 
-            if (!StringIsNullOrEmpty(mainFunc)) {
+            if (!stringIsNullOrEmpty(mainFunc)) {
                 var fn = window[mainFunc];
 
                 if (typeof fn === "function") {
@@ -373,7 +373,7 @@ function FormatDate(dateObj, pattern) {
     }
 
     if (typeof dateObj === "string") {
-        if (StringIsNullOrEmpty(dateObj)) {
+        if (stringIsNullOrEmpty(dateObj)) {
             return "";
         }
 
@@ -663,6 +663,10 @@ function grep(arr, filterFn, returnFirstItemOnly) {
         }
     }
 
+    if (returnFirstItemOnly && filteredItems.length === 0) {
+        return null;
+    }
+
     return filteredItems;
 }
 
@@ -844,12 +848,12 @@ function FormatLabelText(label, value) {
     var strText = value;
     var format = label.data("format");
 
-    if (!StringIsNullOrEmpty(format)) {
+    if (!stringIsNullOrEmpty(format)) {
 
         switch (format) {
 
             case "yesno":
-                strText = StringEquals(strText, "true") ? "Yes" : "No";
+                strText = stringEquals(strText, "true") ? "Yes" : "No";
                 break;
 
             case "datetime":
@@ -906,7 +910,7 @@ function Logout() {
 
 function IsDate(str, format) {
 
-    if (StringIsNullOrEmpty(str)) {
+    if (stringIsNullOrEmpty(str)) {
         return false;
     }
 
@@ -977,7 +981,7 @@ function IsDateObject(obj) {
  */
 function IsFormula(obj) {
 
-    if (StringLeft(obj, 1) === "=") {
+    if (stringLeft(obj, 1) === "=") {
         return true;
     }
 
@@ -1017,7 +1021,7 @@ function StoreFormulaInTag(worksheet, rowIdx, colIdx) {
 
     var formula = worksheet.getFormula(rowIdx, colIdx);
 
-    if (!StringIsNullOrEmpty(formula)) {
+    if (!stringIsNullOrEmpty(formula)) {
 
         var tag = worksheet.getTag(rowIdx, colIdx) || {};
 
@@ -1051,7 +1055,7 @@ function FindBudgetTypeNameById(budgetTypeId) {
 
     var name = grepTransform(
         BudgetTypes,
-        function filter(bt) { return StringEquals(bt.BudgetType_ID, budgetTypeId); },
+        function filter(bt) { return stringEquals(bt.BudgetType_ID, budgetTypeId); },
         function transform(bt) { return bt.BudgetType_Name; },
         true);
 
@@ -1135,13 +1139,13 @@ function GetCombinedCustomerDetails(customer, maxColumns, includePostCode) {
                 break;
         }
 
-        if (!StringIsNullOrEmpty(data)) {
-            combined = StringIsNullOrEmpty(combined) ? data.toString().trim() : combined + " " + data.toString().trim();
+        if (!stringIsNullOrEmpty(data)) {
+            combined = stringIsNullOrEmpty(combined) ? data.toString().trim() : combined + " " + data.toString().trim();
         }
     }
 
-    if (includePostCode && !StringIsNullOrEmpty(customer.Customer_PostCode)) {
-        combined = StringIsNullOrEmpty(combined) ? customer.Customer_PostCode.toString().trim() : combined + " " + customer.Customer_PostCode.toString().trim();
+    if (includePostCode && !stringIsNullOrEmpty(customer.Customer_PostCode)) {
+        combined = stringIsNullOrEmpty(combined) ? customer.Customer_PostCode.toString().trim() : combined + " " + customer.Customer_PostCode.toString().trim();
     }
 
     return combined;
@@ -1224,19 +1228,19 @@ function AreDatesEqual(date1, date2) {
         return false;
     }
 
-    if (IsString(date1)) {
-        date1 = StringLeft(date1, 10); // Get yyyy-MM-dd from start of string
+    if (isString(date1)) {
+        date1 = stringLeft(date1, 10); // Get yyyy-MM-dd from start of string
     }
 
     date1 = RemoveTime(date1);
 
-    if (IsString(date2)) {
-        date2 = StringLeft(date2, 10); // Get yyyy-MM-dd from start of string
+    if (isString(date2)) {
+        date2 = stringLeft(date2, 10); // Get yyyy-MM-dd from start of string
     }
 
     date2 = RemoveTime(date2);
 
-    return StringEquals(date1.toDateString(), date2.toDateString());
+    return stringEquals(date1.toDateString(), date2.toDateString());
 }
 
 /**
@@ -1463,7 +1467,7 @@ function GetYearStartDate(yearEndDate) {
  */
 function RemoveTime(date) {
 
-    if (IsString(date)) {
+    if (isString(date)) {
         // Chop off time element
         var timeIdx = date.indexOf("T");
 
@@ -1474,7 +1478,7 @@ function RemoveTime(date) {
         // Convert YYYY-MM-DD format to YYYY/MM/DD, which JS will parse independent of user local settings
         if (date.indexOf("-")) {
             //date = date.replace("-", "/");
-            date = StringReplace(date, "-", "/");
+            date = stringReplace(date, "-", "/");
         }
 
         date = new Date(date); // Convert string to JS Date
@@ -1510,7 +1514,7 @@ function ShowAlertOnce(msg, delay) {
 */
 function RecentlyAddedCustomers(id) {
 
-    if (StringIsNullOrEmpty(id)) {
+    if (stringIsNullOrEmpty(id)) {
         return JSON.parse(window.localStorage.getItem("RecentlyAddedCustomers"));
     }
     else {
@@ -1566,7 +1570,7 @@ function SetCellValue(worksheet, rowIdx, colIdx, value, setIfNaN) {
     if (IsCellEditable(worksheet, rowIdx, colIdx) /*&& (!isNaN(value) || setIfNaN === true)*/) {
 
         // Check if NaN and not just text
-        if (!setIfNaN && isNaN(value) && !StringIsNullOrEmpty(value) && value.toString() === NaN.toString()) {
+        if (!setIfNaN && isNaN(value) && !stringIsNullOrEmpty(value) && value.toString() === NaN.toString()) {
             value = null;
         }
 
@@ -1601,7 +1605,7 @@ function IsCellRangeEditable(cell) {
 
     var bgColour = cell.backColor();
 
-    return StringEquals(bgColour, editableCellBgColour) || StringEquals(bgColour, editableCellBgColourRgb) || StringEquals(bgColour, editableBudgetBgColour) || StringEquals(bgColour, editedBudgetBgColour);
+    return stringEquals(bgColour, editableCellBgColour) || stringEquals(bgColour, editableCellBgColourRgb) || stringEquals(bgColour, editableBudgetBgColour) || stringEquals(bgColour, editedBudgetBgColour);
 }
 
 /**

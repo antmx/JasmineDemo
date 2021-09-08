@@ -7,7 +7,7 @@
   * @param {boolean} [nullEqualsEmpty] Optional flag indicating whether or not to consider null and zero-length strings to be equal. Default is false (not equal).
   * @returns {boolean} True/false indicating if equal or not.
  */
-function StringEquals(str1, str2, cs, nullEqualsEmpty) {
+function stringEquals(str1, str2, cs, nullEqualsEmpty) {
 
     if (str1 == null && str2 == null) {
         // Both are null - match
@@ -38,7 +38,7 @@ function StringEquals(str1, str2, cs, nullEqualsEmpty) {
  * @param {any} str The string to chop off the last character.
  * @returns A string minus the last character.
  */
-function StringChopLastChar(str) {
+function stringChopLastChar(str) {
 
     if (str == null || str === undefined || str.length === 0) {
         return str;
@@ -57,11 +57,11 @@ function StringChopLastChar(str) {
  * @param {any} cs Flag specifying if case-sensitive comparison should be performed. Default is false, i.e. NOT case-sensitive.
  * @returns {string} A value indicating if the 2 strings are equal.
  */
-function StringSansWhitespaceEquals(str1, str2, cs) {
+function stringSansWhitespaceEquals(str1, str2, cs) {
 
-    str1 = StringRemoveWhitespace(str1);
+    str1 = stringRemoveWhitespace(str1);
     //var str1 = "Opening 	 valuation in\n\rstore"
-    return StringEquals(str1, str2, cs);
+    return stringEquals(str1, str2, cs);
 }
 
 /**
@@ -69,7 +69,7 @@ function StringSansWhitespaceEquals(str1, str2, cs) {
  * @param {any} str1 The string to remove whitespace from.
  * @returns A new string with whitespace removed.
  */
-function StringRemoveWhitespace(str1) {
+function stringRemoveWhitespace(str1) {
 
     if (str1 == null) {
         return str1;
@@ -86,9 +86,9 @@ function StringRemoveWhitespace(str1) {
  * @param {string} defaultValue the default value to return if @str is null or empty.
  * @returns {string}
  */
-function StringGetValueOrDefault(str, defaultValue) {
+function stringGetValueOrDefault(str, defaultValue) {
 
-    return StringIsNullOrEmpty(str) ? defaultValue : str;
+    return stringIsNullOrEmpty(str) ? defaultValue : str;
 }
 
 /**
@@ -97,7 +97,7 @@ function StringGetValueOrDefault(str, defaultValue) {
  * @param {string} str2 the string to search for
  * @param {boolean} cs case-sensitive search. Defaults to false if not specified
  */
-function StringContains(str1, str2, cs) {
+function stringContains(str1, str2, cs) {
 
     if (str1 == null && str2 == null)
         return true;
@@ -120,7 +120,7 @@ function StringContains(str1, str2, cs) {
  * @param {string} word the word to search for, e.g. 'income' would return true, 'incom' would return false.
  * @param {boolean} cs case-sensitive search. Defaults to false (case-insensitive) if not specified.
  */
-function StringContainsWord(str, word, cs) {
+function stringContainsWord(str, word, cs) {
 
     str = str + ""; // Ensure it's a string
 
@@ -145,7 +145,7 @@ function StringContainsWord(str, word, cs) {
  * @param {Array<string>} arr Array of strings to search for in str.
  * @param {boolean} [cs] Flag to indicate if a case-sensitive search is required. Defaults to false (case-insensitive) if not specified.
  */
-function StringContainsAny(str, arr, cs) {
+function stringContainsAny(str, arr, cs) {
 
     if (!$.isArray(arr) || arr.length === 0) {
         throw new Error("StringContainsAny, arr param must be a non-empty array");
@@ -153,7 +153,7 @@ function StringContainsAny(str, arr, cs) {
 
     for (var idx = 0; idx < arr.length; idx++) {
 
-        if (StringContains(str, arr[idx], cs)) {
+        if (stringContains(str, arr[idx], cs)) {
             return true;
         }
     }
@@ -167,11 +167,11 @@ function StringContainsAny(str, arr, cs) {
  * @param {string} str The string to search for.
  * @param {boolean} cs Case-sensitive search. Defaults to false (case-insensitive) if not specified.
  */
-function StringArrayContains(arr, str, cs) {
+function stringArrayContains(arr, str, cs) {
 
     if (arr != null) {
         for (var idx = 0; idx < arr.length; idx++) {
-            if (StringEquals(arr[idx], str, cs)) {
+            if (stringEquals(arr[idx], str, cs)) {
                 return true;
             }
         }
@@ -180,7 +180,7 @@ function StringArrayContains(arr, str, cs) {
     return false;
 }
 
-function StringReplaceLineBreaks(str, replacement) {
+function stringReplaceLineBreaks(str, replacement) {
 
     if (str === null || str === undefined || str.length === 0) {
         return str;
@@ -203,7 +203,7 @@ function StringReplaceLineBreaks(str, replacement) {
  * @param {boolean} cs Case-sensitive flag. Defaults to false if not provided.
  * @returns {string} Returns the string with matching occurrences replaced.
  */
-function StringReplace(str, replaceWhat, replacement, cs) {
+function stringReplace(str, replaceWhat, replacement, cs) {
 
     str = str + ""; // Ensure it's a string
 
@@ -232,7 +232,7 @@ function StringReplace(str, replaceWhat, replacement, cs) {
  * @param {boolean} splitOnConsecutiveCaps Flag to indicate if consecutive capital letters should also be split. Default is false.
  * @returns {string} Returns a string.
  */
-function StringSplitCaps(str, separator, splitOnConsecutiveCaps) {
+function stringSplitCaps(str, separator, splitOnConsecutiveCaps) {
 
     if (str === null || str === undefined || str.length === 0) {
         return str;
@@ -282,14 +282,14 @@ function StringSplitCaps(str, separator, splitOnConsecutiveCaps) {
  * @param {string} str String to be searched in and modified.
  * @param {string} end String to remove.
  */
-function StringChopEnd(str, end) {
+function stringChopEnd(str, end) {
 
     if (str == null || str == "") {
         return str;
     }
 
-    if (StringRight(str, end.length) === end) {
-        str = StringLeft(str, str.length - end.length);
+    if (stringRight(str, end.length) === end) {
+        str = stringLeft(str, str.length - end.length);
     }
 
     return str;
@@ -299,7 +299,7 @@ function StringChopEnd(str, end) {
  * Trims whitespace from the start and end of a string.
  * @param {string} str
  */
-function StringTrim(str) {
+function stringTrim(str) {
 
     if (typeof str !== "string" || str == null || str == "") {
         return str;
@@ -313,7 +313,7 @@ function StringTrim(str) {
  * Determines if a string is null/undefined/empty/whitespace.
  * @param {any} str The string to test.
  */
-function StringIsNullOrEmpty(str) {
+function stringIsNullOrEmpty(str) {
 
     if (str === undefined || str === null)
         return true;
@@ -329,7 +329,7 @@ function StringIsNullOrEmpty(str) {
  * @param {string} start The string to search for.
  * @returns {boolean}
  */
-function StringStartsWith(str, start) {
+function stringStartsWith(str, start) {
 
     if (str == null || start == null) {
         return false;
@@ -354,11 +354,11 @@ function StringStartsWith(str, start) {
  * @param {string} str The string to test.
  * @returns {boolean} Returns a value indicating if str is null/empty guid.
  */
-function StringIsNullOrEmptyGuid(str) {
+function stringIsNullOrEmptyGuid(str) {
 
     const EMPTY_GUID = '00000000-0000-0000-0000-000000000000';
 
-    return StringIsNullOrEmpty(str) || str == EMPTY_GUID;
+    return stringIsNullOrEmpty(str) || str == EMPTY_GUID;
 }
 
 /**
@@ -366,7 +366,7 @@ function StringIsNullOrEmptyGuid(str) {
  * @param {string} str The string to look in.
  * @param {number} length The number of chars to return.
  */
-function StringLeft(str, length) {
+function stringLeft(str, length) {
 
     if (str == null) {
         return str;
@@ -387,7 +387,7 @@ function StringLeft(str, length) {
  * @param {number} length Number indicating how many characters to return. If 0, a zero-length string ("") is returned. If greater than or equal to the number of characters in str, the entire string is returned.
  * @returns {string} Returns a string containing a specified number of characters from the right side of a string.
  */
-function StringRight(str, length) {
+function stringRight(str, length) {
 
     if (str == null) {
         str = "";
@@ -411,7 +411,7 @@ function StringRight(str, length) {
  * @param {any} obj The value to test.
  * @returns {boolean} Returns a value indicating if the value passed in is a string.
  */
-function IsString(obj) {
+function isString(obj) {
 
     return typeof obj === "string";
 }

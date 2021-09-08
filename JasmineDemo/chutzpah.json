@@ -7,7 +7,8 @@
   //},
   "References": [
     { "Path": "./src/misc.js" },
-    { "Path": "./src/services/IndexedDbSvc.js" }
+    { "Path": "./src/stringFuncs.js" },
+    { "Path": "./src/services/indexedDbSvc.js" }
   ],
   "Tests": [
     { "Path": "./spec" }

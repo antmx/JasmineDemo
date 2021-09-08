@@ -7,7 +7,7 @@
 /**
  * @classdesc Budget Data Access Layer
  */
-var ApiClient = /** @class */ (function () {
+var apiClient = /** @class */ (function () {
 
     /**
      * @constructor Initialises a new ApiClient instance
@@ -15,7 +15,7 @@ var ApiClient = /** @class */ (function () {
      * @param {BudgetCalculator} budgetCalculator Instance of BudgetCalculator.
      * @prop {DbQuerySvc} DbQrySvc Instance of DbQuerySvc
      */
-    function ApiClient(dbQuerySvc, budgetCalculator) {
+    function apiClient(dbQuerySvc, budgetCalculator) {
 
         this.DbQrySvc = dbQuerySvc;
         this.BudgetCalculator = budgetCalculator;
@@ -39,7 +39,7 @@ var ApiClient = /** @class */ (function () {
 
     // #region Copying
 
-    ApiClient.prototype.CopyBudgetDifferentYear = function (srcBudgetDateId, newYearEndDate, newVersionNo, newDescription/*Removed for #457, newOpeningBankBalance*/) {
+    apiClient.prototype.CopyBudgetDifferentYear = function (srcBudgetDateId, newYearEndDate, newVersionNo, newDescription/*Removed for #457, newOpeningBankBalance*/) {
 
         // 1 - FetchBudget
         // 2 - Adjust values, remove unwanted rows/values
@@ -97,7 +97,7 @@ var ApiClient = /** @class */ (function () {
         return deferred.promise();
     };
 
-    ApiClient.prototype.CopyBudgetSameYear = function (srcBudgetDateId, newYearEndDate, newVersionNo, newDescription/*Removed for #457, newOpeningBankBalance*/) {
+    apiClient.prototype.CopyBudgetSameYear = function (srcBudgetDateId, newYearEndDate, newVersionNo, newDescription/*Removed for #457, newOpeningBankBalance*/) {
 
         // 1 - FetchBudget
         // 2 - Adjust values, remove unwanted rows/values
@@ -156,7 +156,7 @@ var ApiClient = /** @class */ (function () {
 
     // #region Copy ArableCropReconcils
 
-    ApiClient.prototype.CopyArableCropReconcils = function (budgetObj, newBudgetDateId, isSameYear) {
+    apiClient.prototype.CopyArableCropReconcils = function (budgetObj, newBudgetDateId, isSameYear) {
 
         var self = this;
 
@@ -171,7 +171,7 @@ var ApiClient = /** @class */ (function () {
 
                 // Copy header's lines
                 var srcLines = $.grep(budgetObj.ArableCropReconcilLines, function (line) {
-                    return StringEquals(line.ArableCropReconcil_Header_ID, srcHeaderId);
+                    return stringEquals(line.ArableCropReconcil_Header_ID, srcHeaderId);
                 });
 
                 $.each(srcLines, function (idx, line) {
@@ -201,7 +201,7 @@ var ApiClient = /** @class */ (function () {
         });
     };
 
-    ApiClient.prototype.CopyArableCropReconcilHeader = function (header, newBudgetDateId, isSameYear) {
+    apiClient.prototype.CopyArableCropReconcilHeader = function (header, newBudgetDateId, isSameYear) {
 
         header.ArableCropRecon_Header_ID = GenerateGuid(); // Assign new id
         header.ArableCropRecon_YearEnd = newBudgetDateId; // Tie to the new budget copy
@@ -209,40 +209,40 @@ var ApiClient = /** @class */ (function () {
 
     };
 
-    ApiClient.prototype.CopyArableCropReconcilLine = function (line, newHeaderId, isSameYear) {
+    apiClient.prototype.CopyArableCropReconcilLine = function (line, newHeaderId, isSameYear) {
 
         // Copy only 'Opening valuation in store' cells, Contract Operations £/(ac/ha), and Variable Costs Area (ac/ha) and £/(ac/ha)
 
         function IsLineRelevant(ln) {
 
-            var enterprise = StringReplaceLineBreaks(ln.ArableCropReconcil_Enterprise, " ");
+            var enterprise = stringReplaceLineBreaks(ln.ArableCropReconcil_Enterprise, " ");
 
             if (isSameYear) {
-                if (StringEquals(enterprise, "Opening valuation in store")
-                    && StringArrayContains([ArableCropReconcil_Constants.ColIdx_PrevYearCrop_Grain_Tonnes,
+                if (stringEquals(enterprise, "Opening valuation in store")
+                    && stringArrayContains([ArableCropReconcil_Constants.ColIdx_PrevYearCrop_Grain_Tonnes,
                     ArableCropReconcil_Constants.ColIdx_PrevYearCrop_Grain_CostPerTonne], ln.ArableCropReconcil_ColIdx)) {
 
                     return true;
                 }
 
-                if (StringArrayContains(["Ploughing", "Cultivations", "Drilling", "Fertilising", "Spraying"], enterprise)
-                    && StringArrayContains([ArableCropReconcil_Constants.ColIdx_ArableContractingCosts_OpeningTillage_CostPerArea,
+                if (stringArrayContains(["Ploughing", "Cultivations", "Drilling", "Fertilising", "Spraying"], enterprise)
+                    && stringArrayContains([ArableCropReconcil_Constants.ColIdx_ArableContractingCosts_OpeningTillage_CostPerArea,
                     ArableCropReconcil_Constants.ColIdx_ArableContractingCosts_TotalCrop_CostPerArea,
                     ArableCropReconcil_Constants.ColIdx_ArableContractingCosts_ClosingTillage_CostPerArea], ln.ArableCropReconcil_ColIdx)) {
 
                     return true;
                 }
 
-                if (StringArrayContains(["Fertilisers", "Purchased seed", "Home-grownseed & royalties", "Sprays", "Miscellaneous"], enterprise)
-                    && StringArrayContains([ArableCropReconcil_Constants.ColIdx_ArableCropTilages_OpeningTillages_Area,
+                if (stringArrayContains(["Fertilisers", "Purchased seed", "Home-grownseed & royalties", "Sprays", "Miscellaneous"], enterprise)
+                    && stringArrayContains([ArableCropReconcil_Constants.ColIdx_ArableCropTilages_OpeningTillages_Area,
                     ArableCropReconcil_Constants.ColIdx_ArableCropTilages_OpeningTillages_CostPerArea], ln.ArableCropReconcil_ColIdx)) {
 
                     return true;
                 }
             }
             else { // !isSameYear
-                if (StringEquals(enterprise, "Closing valuation in store")
-                    && StringArrayContains([ArableCropReconcil_Constants.ColIdx_PrevYearCrop_Grain_CostPerTonne,
+                if (stringEquals(enterprise, "Closing valuation in store")
+                    && stringArrayContains([ArableCropReconcil_Constants.ColIdx_PrevYearCrop_Grain_CostPerTonne,
                     ArableCropReconcil_Constants.ColIdx_PrevYearCrop_Straw_CostPerTonne],
                         ln.ArableCropReconcil_ColIdx)) { // Closing valuation in store row, £/Tonne col, Grain and Straw sections
 
@@ -252,7 +252,7 @@ var ApiClient = /** @class */ (function () {
                     return true;
                 }
                 // Move ARABLE CONTRACTING COSTS - Closing Tillage - £/(ac/ha) to Opening Tillage	
-                else if (StringArrayContains(["Ploughing", "Cultivations", "Drilling", "Fertilising", "Spraying"], enterprise)
+                else if (stringArrayContains(["Ploughing", "Cultivations", "Drilling", "Fertilising", "Spraying"], enterprise)
                     && ln.ArableCropReconcil_ColIdx == ArableCropReconcil_Constants.ColIdx_ArableContractingCosts_ClosingTillage_CostPerArea) {
 
                     // Adjust
@@ -261,7 +261,7 @@ var ApiClient = /** @class */ (function () {
                     return true;
                 }
                 // Move ARABLE CROP TILLAGES-CLOSING TILLAGES-Area (ac/ha) and £/(ac/ha) to OPENING TILLAGES
-                else if (StringArrayContains(["Fertilisers", "Purchased seed", "Home-grown seed & royalties", "Sprays", "Miscellaneous"], enterprise)) {
+                else if (stringArrayContains(["Fertilisers", "Purchased seed", "Home-grown seed & royalties", "Sprays", "Miscellaneous"], enterprise)) {
 
                     if (ln.ArableCropReconcil_ColIdx == ArableCropReconcil_Constants.ColIdx_ArableCropTilages_ClosingTillages_Area) {
                         // Adjust - move Closing Tillages-Area to Opening Tillages-Area
@@ -298,7 +298,7 @@ var ApiClient = /** @class */ (function () {
      * @param {any} enterpriseName
      * @param {number} colIdx 1 = Grain, 4 = Straw
      */
-    ApiClient.prototype.CreateArableCropOpeningValuationInStoreTonnesReconcilLine = function (budgetObj, arableCropReconcilHeaderId, enterpriseName, colIdx) {
+    apiClient.prototype.CreateArableCropOpeningValuationInStoreTonnesReconcilLine = function (budgetObj, arableCropReconcilHeaderId, enterpriseName, colIdx) {
 
         var closingValuationInStoreTonnes = this.BudgetCalculator.CalculateArableCropReconcil_PreviousYearCrop_ClosingValuationInStoreTonnes(
             budgetObj.ArableCropReconcilHeaders,
@@ -321,7 +321,7 @@ var ApiClient = /** @class */ (function () {
 
     // #region Copy BeefRearingCals
 
-    ApiClient.prototype.CopyBeefRearingCals = function (budgetObj, newBudgetDateId, isSameYear) {
+    apiClient.prototype.CopyBeefRearingCals = function (budgetObj, newBudgetDateId, isSameYear) {
 
         var self = this;
 
@@ -336,7 +336,7 @@ var ApiClient = /** @class */ (function () {
 
                 // Copy header's lines
                 var srcLines = $.grep(budgetObj.BeefRearingCalLines, function (line) {
-                    return StringEquals(line.BeefRearingCalendar_Header_ID, srcHeaderId);
+                    return stringEquals(line.BeefRearingCalendar_Header_ID, srcHeaderId);
                 });
 
                 $.each(srcLines, function (idx, line) {
@@ -347,7 +347,7 @@ var ApiClient = /** @class */ (function () {
 
     };
 
-    ApiClient.prototype.CopyBeefRearingCalHeader = function (header, newBudgetDateId, isSameYear) {
+    apiClient.prototype.CopyBeefRearingCalHeader = function (header, newBudgetDateId, isSameYear) {
 
         header.BeefRearing_Header_ID = GenerateGuid(); // Assign new id
         header.BeefRearing_Header_YearEnd = newBudgetDateId; // Tie to the new budget copy
@@ -355,7 +355,7 @@ var ApiClient = /** @class */ (function () {
 
     };
 
-    ApiClient.prototype.CopyBeefRearingCalLine = function (line, newHeaderId, isSameYear) {
+    apiClient.prototype.CopyBeefRearingCalLine = function (line, newHeaderId, isSameYear) {
 
         var self = this;
 
@@ -394,7 +394,7 @@ var ApiClient = /** @class */ (function () {
 
     // #region Copy BreedingEweCals
 
-    ApiClient.prototype.CopyBreedingEweCals = function (budgetObj, newBudgetDateId, isSameYear) {
+    apiClient.prototype.CopyBreedingEweCals = function (budgetObj, newBudgetDateId, isSameYear) {
 
         var self = this;
 
@@ -409,7 +409,7 @@ var ApiClient = /** @class */ (function () {
 
                 // Copy header's lines
                 var srcLines = $.grep(budgetObj.BreedingEweCalLines, function (line) {
-                    return StringEquals(line.BreedingEwesCalendar_Header_ID, srcHeaderId);
+                    return stringEquals(line.BreedingEwesCalendar_Header_ID, srcHeaderId);
                 });
 
                 $.each(srcLines, function (idx, line) {
@@ -425,7 +425,7 @@ var ApiClient = /** @class */ (function () {
         });
     };
 
-    ApiClient.prototype.CreateBreedingEwesOpeningLambNumbersCalLine = function (budgetObj, calHeaderId, enterpriseName) {
+    apiClient.prototype.CreateBreedingEwesOpeningLambNumbersCalLine = function (budgetObj, calHeaderId, enterpriseName) {
 
         var self = this;
 
@@ -445,7 +445,7 @@ var ApiClient = /** @class */ (function () {
         return openingLambNumbersCalLine;
     };
 
-    ApiClient.prototype.CopyBreedingEweCalHeader = function (header, newBudgetDateId, isSameYear) {
+    apiClient.prototype.CopyBreedingEweCalHeader = function (header, newBudgetDateId, isSameYear) {
 
         header.BreedingEwes_Header_ID = GenerateGuid(); // Assign new id
         header.BreedingEwes_Header_YearEnd = newBudgetDateId; // Tie to the new budget copy
@@ -453,7 +453,7 @@ var ApiClient = /** @class */ (function () {
 
     };
 
-    ApiClient.prototype.CopyBreedingEweCalLine = function (line, newHeaderId, isSameYear) {
+    apiClient.prototype.CopyBreedingEweCalLine = function (line, newHeaderId, isSameYear) {
 
         var self = this;
 
@@ -485,7 +485,7 @@ var ApiClient = /** @class */ (function () {
 
     // #region Copy Capexes
 
-    ApiClient.prototype.CopyCapexes = function (budgetObj, newBudgetDateId, isSameYear) {
+    apiClient.prototype.CopyCapexes = function (budgetObj, newBudgetDateId, isSameYear) {
 
         var self = this;
 
@@ -499,7 +499,7 @@ var ApiClient = /** @class */ (function () {
             if (header.ModifiedData) {
                 // Copy header's lines
                 var srcLines = $.grep(budgetObj.CapexLines, function (line) {
-                    return StringEquals(line.Capex_Header_ID, srcHeaderId);
+                    return stringEquals(line.Capex_Header_ID, srcHeaderId);
                 });
 
                 $.each(srcLines, function (idx, line) {
@@ -536,7 +536,7 @@ var ApiClient = /** @class */ (function () {
 
     };
 
-    ApiClient.prototype.CreateOpeningBalanceCapexLine = function (capexHeaderId, openingBalanceRowIdx, allCapexLines, openingBalanceCategoryId) {
+    apiClient.prototype.CreateOpeningBalanceCapexLine = function (capexHeaderId, openingBalanceRowIdx, allCapexLines, openingBalanceCategoryId) {
 
         var self = this;
         var closingBalance = self.BudgetCalculator.Calculate_CapexPlans_ClosingBalance(allCapexLines, openingBalanceCategoryId);
@@ -555,7 +555,7 @@ var ApiClient = /** @class */ (function () {
         return openingBalCapexLine;
     };
 
-    ApiClient.prototype.CopyCapexHeader = function (header, newBudgetDateId, isSameYear) {
+    apiClient.prototype.CopyCapexHeader = function (header, newBudgetDateId, isSameYear) {
 
         header.Capex_Header_ID = GenerateGuid(); // Assign new id
         header.Capex_Header_YearEnd = newBudgetDateId; // Tie to the new budget copy
@@ -563,7 +563,7 @@ var ApiClient = /** @class */ (function () {
 
     };
 
-    ApiClient.prototype.CopyCapexLine = function (line, newHeaderId, isSameYear) {
+    apiClient.prototype.CopyCapexLine = function (line, newHeaderId, isSameYear) {
 
         if (!isSameYear) {
             return false;
@@ -575,7 +575,7 @@ var ApiClient = /** @class */ (function () {
         CategoryLkp.OpeningBalance_Machinery,
         CategoryLkp.OpeningBalance_Investments];
 
-        if (isSameYear && !StringArrayContains(validCats, line.Capex_Line_BreakdownOn)) {
+        if (isSameYear && !stringArrayContains(validCats, line.Capex_Line_BreakdownOn)) {
             return;
         }
 
@@ -588,7 +588,7 @@ var ApiClient = /** @class */ (function () {
 
     // #region Copy Dairy Youngstock Calendars
 
-    ApiClient.prototype.CopyDairyYoungstockCals = function (budgetObj, newBudgetDateId, isSameYear) {
+    apiClient.prototype.CopyDairyYoungstockCals = function (budgetObj, newBudgetDateId, isSameYear) {
 
         var self = this;
 
@@ -602,7 +602,7 @@ var ApiClient = /** @class */ (function () {
             if (header.ModifiedData) {
                 // Copy header's lines
                 var srcLines = $.grep(budgetObj.DairyYoungstockCalLines, function (line) {
-                    return StringEquals(line.DairyYoungstockCalendar_Header_ID, srcHeaderId);
+                    return stringEquals(line.DairyYoungstockCalendar_Header_ID, srcHeaderId);
                 });
 
                 $.each(srcLines, function (idx, line) {
@@ -613,7 +613,7 @@ var ApiClient = /** @class */ (function () {
 
     };
 
-    ApiClient.prototype.CopyDairyYoungstockCalHeader = function (header, newBudgetDateId, isSameYear) {
+    apiClient.prototype.CopyDairyYoungstockCalHeader = function (header, newBudgetDateId, isSameYear) {
 
         header.DairyYoungstockCal_Header_ID = GenerateGuid(); // Assign new id
         header.DairyYoungstockCal_Header_YearEnd = newBudgetDateId; // Tie to the new budget copy
@@ -621,7 +621,7 @@ var ApiClient = /** @class */ (function () {
 
     };
 
-    ApiClient.prototype.CopyDairyYoungstockCalLine = function (line, newHeaderId, isSameYear) {
+    apiClient.prototype.CopyDairyYoungstockCalLine = function (line, newHeaderId, isSameYear) {
 
         var self = this;
 
@@ -661,7 +661,7 @@ var ApiClient = /** @class */ (function () {
 
     // #region Copy Gross Margins
 
-    ApiClient.prototype.CopyGrossMargins = function (budgetObj, newBudgetDateId, isSameYear) {
+    apiClient.prototype.CopyGrossMargins = function (budgetObj, newBudgetDateId, isSameYear) {
 
         var self = this;
 
@@ -737,34 +737,34 @@ var ApiClient = /** @class */ (function () {
      * @param {GrossMargin} grossMargin GM object.
      * @param {[]|number} colsToPreserve Array of col indexes, or the col index, to preserve.
      */
-    ApiClient.prototype.DeleteGrossMarginMembers = function (grossMargin, colsToPreserve) {
+    apiClient.prototype.DeleteGrossMarginMembers = function (grossMargin, colsToPreserve) {
 
         if (colsToPreserve.length === undefined) {
             // Convert single value to array
             colsToPreserve = [colsToPreserve];
         }
 
-        if (!StringArrayContains(colsToPreserve, GM_Constants.ColIdx_Label)) {
+        if (!stringArrayContains(colsToPreserve, GM_Constants.ColIdx_Label)) {
             delete grossMargin.GrossMargin_Enterprise_Custom;
         }
 
-        if (!StringArrayContains(colsToPreserve, GM_Constants.ColIdx_Numbers)) {
+        if (!stringArrayContains(colsToPreserve, GM_Constants.ColIdx_Numbers)) {
             delete grossMargin.GrossMargin_UnitsNumSold;
         }
 
-        if (!StringArrayContains(colsToPreserve, GM_Constants.ColIdx_Value)) {
+        if (!stringArrayContains(colsToPreserve, GM_Constants.ColIdx_Value)) {
             delete grossMargin.GrossMargin_UnitValueEach;
         }
 
-        if (!StringArrayContains(colsToPreserve, GM_Constants.ColIdx_Total)) {
+        if (!stringArrayContains(colsToPreserve, GM_Constants.ColIdx_Total)) {
             delete grossMargin.GrossMargin_UnitsValueTotal;
         }
 
-        if (!StringArrayContains(colsToPreserve, GM_Constants.ColIdx_PerArea)) {
+        if (!stringArrayContains(colsToPreserve, GM_Constants.ColIdx_PerArea)) {
             delete grossMargin.GrossMargin_UnitsValueAvg;
         }
 
-        if (!StringArrayContains(colsToPreserve, DairyHerdGM_Constants.ColIdx_UnitsPricePerLitre)) {
+        if (!stringArrayContains(colsToPreserve, DairyHerdGM_Constants.ColIdx_UnitsPricePerLitre)) {
             delete grossMargin.GrossMargin_UnitsPricePerLitre;
         }
 
@@ -774,17 +774,17 @@ var ApiClient = /** @class */ (function () {
 
     };
 
-    ApiClient.prototype.CopyGrossMargin = function (grossMargin, newBudgetDateId, isSameYear, budgetObj) {
+    apiClient.prototype.CopyGrossMargin = function (grossMargin, newBudgetDateId, isSameYear, budgetObj) {
 
         var self = this;
 
         function IsGmRelevant(gm) {
 
             // Check for 'Breeding Ewes GM'
-            if (StringEquals(gm.GrossMargin_CategoryType, CategoryLkp.BreedingEwesGM)) {
+            if (stringEquals(gm.GrossMargin_CategoryType, CategoryLkp.BreedingEwesGM)) {
 
                 if (isSameYear
-                    && StringEquals(gm.GrossMargin_RowIdx, BreedingEwesGM_Constants.RowIdx_OpeningFlockValuation) // Opening flock valuation row
+                    && stringEquals(gm.GrossMargin_RowIdx, BreedingEwesGM_Constants.RowIdx_OpeningFlockValuation) // Opening flock valuation row
                 ) {
                     // Adjust
                     self.DeleteGrossMarginMembers(gm, [GM_Constants.ColIdx_Numbers, GM_Constants.ColIdx_Value]);
@@ -792,7 +792,7 @@ var ApiClient = /** @class */ (function () {
                     return true;
                 }
                 else if (!isSameYear
-                    && StringEquals(gm.GrossMargin_RowIdx, BreedingEwesGM_Constants.RowIdx_ClosingFlockValuation)
+                    && stringEquals(gm.GrossMargin_RowIdx, BreedingEwesGM_Constants.RowIdx_ClosingFlockValuation)
                 ) {
                     // Adjust - Move Closing Flock Valuation Value (£) to Opening Flock Valuation Value
                     gm.GrossMargin_RowIdx = BreedingEwesGM_Constants.RowIdx_OpeningFlockValuation;
@@ -803,10 +803,10 @@ var ApiClient = /** @class */ (function () {
             }
 
             // Check for 'Dairy Herd GM'
-            if (StringEquals(gm.GrossMargin_CategoryType, CategoryLkp.DairyHerdGM)) {
+            if (stringEquals(gm.GrossMargin_CategoryType, CategoryLkp.DairyHerdGM)) {
 
                 if (isSameYear
-                    && StringEquals(gm.GrossMargin_RowIdx, DairyHerdGM_Constants.RowIdx_OpeningHerdValuation) // Opening herd valuation row
+                    && stringEquals(gm.GrossMargin_RowIdx, DairyHerdGM_Constants.RowIdx_OpeningHerdValuation) // Opening herd valuation row
                 ) {
                     // Adjust
                     self.DeleteGrossMarginMembers(gm, [GM_Constants.ColIdx_Numbers, GM_Constants.ColIdx_Value]);
@@ -814,7 +814,7 @@ var ApiClient = /** @class */ (function () {
                     return true;
                 }
                 else if (!isSameYear
-                    && StringEquals(gm.GrossMargin_RowIdx, DairyHerdGM_Constants.RowIdx_ClosingHerdValuation) // Closing herd valuation row
+                    && stringEquals(gm.GrossMargin_RowIdx, DairyHerdGM_Constants.RowIdx_ClosingHerdValuation) // Closing herd valuation row
                 ) {
                     // Adjust
                     gm.GrossMargin_RowIdx = DairyHerdGM_Constants.RowIdx_OpeningHerdValuation; // Move Closing Herd Valuation row cells to Opening Herd Valuation row
@@ -825,10 +825,10 @@ var ApiClient = /** @class */ (function () {
             }
 
             // Check for 'Forage Crop GM'
-            if (StringEquals(gm.GrossMargin_CategoryType, CategoryLkp.ForageCropGM)) {
+            if (stringEquals(gm.GrossMargin_CategoryType, CategoryLkp.ForageCropGM)) {
 
                 if (isSameYear
-                    && StringEquals(gm.GrossMargin_RowIdx, ForageCropGM_Constants.RowIdx_OpeningValuation) // Opening valuation row
+                    && stringEquals(gm.GrossMargin_RowIdx, ForageCropGM_Constants.RowIdx_OpeningValuation) // Opening valuation row
                 ) {
                     // Adjust
                     self.DeleteGrossMarginMembers(gm, [GM_Constants.ColIdx_Numbers, GM_Constants.ColIdx_Value]);
@@ -836,7 +836,7 @@ var ApiClient = /** @class */ (function () {
                     return true;
                 }
                 else if (!isSameYear
-                    && StringEquals(gm.GrossMargin_RowIdx, ForageCropGM_Constants.RowIdx_ClosingValuation)
+                    && stringEquals(gm.GrossMargin_RowIdx, ForageCropGM_Constants.RowIdx_ClosingValuation)
                 ) {
                     // Adjust - move Closing valuation to Opening valuation
                     gm.GrossMargin_RowIdx = ForageCropGM_Constants.RowIdx_OpeningValuation;
@@ -847,10 +847,10 @@ var ApiClient = /** @class */ (function () {
             }
 
             // Check for 'Grassland GM'
-            if (StringEquals(gm.GrossMargin_CategoryType, CategoryLkp.GrasslandGM)) {
+            if (stringEquals(gm.GrossMargin_CategoryType, CategoryLkp.GrasslandGM)) {
 
                 if (isSameYear
-                    && StringEquals(gm.GrossMargin_RowIdx, GrasslandGM_Constants.RowIdx_OpeningValuation) // Opening Valuation row
+                    && stringEquals(gm.GrossMargin_RowIdx, GrasslandGM_Constants.RowIdx_OpeningValuation) // Opening Valuation row
                 ) {
                     // Adjust
                     self.DeleteGrossMarginMembers(gm, [GM_Constants.ColIdx_Numbers, GM_Constants.ColIdx_Value]);
@@ -858,7 +858,7 @@ var ApiClient = /** @class */ (function () {
                     return true;
                 }
                 else if (!isSameYear
-                    && StringEquals(gm.GrossMargin_RowIdx, GrasslandGM_Constants.RowIdx_ClosingValuation) // Closing valuation
+                    && stringEquals(gm.GrossMargin_RowIdx, GrasslandGM_Constants.RowIdx_ClosingValuation) // Closing valuation
                 ) {
                     // Adjust - move Closing Valuation row to Opening Valuation row
                     gm.GrossMargin_RowIdx = GrasslandGM_Constants.RowIdx_OpeningValuation;
@@ -869,10 +869,10 @@ var ApiClient = /** @class */ (function () {
             }
 
             // Check for 'Laying Poultry GM'
-            if (StringEquals(gm.GrossMargin_CategoryType, CategoryLkp.LayingPoultryGM)) {
+            if (stringEquals(gm.GrossMargin_CategoryType, CategoryLkp.LayingPoultryGM)) {
 
                 if (isSameYear
-                    && StringEquals(gm.GrossMargin_RowIdx, LayingPoultryGM_Constants.RowIdx_OpeningValuation) // Opening Valuation row
+                    && stringEquals(gm.GrossMargin_RowIdx, LayingPoultryGM_Constants.RowIdx_OpeningValuation) // Opening Valuation row
                 ) {
                     // Adjust
                     self.DeleteGrossMarginMembers(gm, [GM_Constants.ColIdx_Numbers, GM_Constants.ColIdx_Value]);
@@ -880,7 +880,7 @@ var ApiClient = /** @class */ (function () {
                     return true;
                 }
                 else if (!isSameYear
-                    && StringEquals(gm.GrossMargin_RowIdx, LayingPoultryGM_Constants.RowIdx_ClosingValuation) // Closing valuation
+                    && stringEquals(gm.GrossMargin_RowIdx, LayingPoultryGM_Constants.RowIdx_ClosingValuation) // Closing valuation
                 ) {
                     // Adjust - move Closing Valuation row to Opening Valuation row
                     gm.GrossMargin_RowIdx = LayingPoultryGM_Constants.RowIdx_OpeningValuation;
@@ -909,7 +909,7 @@ var ApiClient = /** @class */ (function () {
 
     // #region Copy Loan Schedules
 
-    ApiClient.prototype.CopyLoanSchedules = function (budgetObj, newBudgetDateId, isSameYear) {
+    apiClient.prototype.CopyLoanSchedules = function (budgetObj, newBudgetDateId, isSameYear) {
 
         var self = this;
 
@@ -923,7 +923,7 @@ var ApiClient = /** @class */ (function () {
             if (header.ModifiedData) {
                 // Copy header's lines
                 var srcLines = $.grep(budgetObj.LoanScheduleLines, function (line) {
-                    return StringEquals(line.LoanSchedules_Header_ID, srcHeaderId);
+                    return stringEquals(line.LoanSchedules_Header_ID, srcHeaderId);
                 });
 
                 $.each(srcLines, function (idx, line) {
@@ -934,14 +934,14 @@ var ApiClient = /** @class */ (function () {
 
     };
 
-    ApiClient.prototype.CopyLoanScheduleHeader = function (header, newBudgetDateId, isSameYear) {
+    apiClient.prototype.CopyLoanScheduleHeader = function (header, newBudgetDateId, isSameYear) {
 
         header.LoanSchedules_Header_ID = GenerateGuid(); // Assign new id
         header.LoanSchedules_Header_YearEnd = newBudgetDateId; // Tie to the new budget copy
         header.ModifiedData = true;
     };
 
-    ApiClient.prototype.CopyLoanScheduleLine = function (line, newHeaderId, isSameYear, headerCategoryId) {
+    apiClient.prototype.CopyLoanScheduleLine = function (line, newHeaderId, isSameYear, headerCategoryId) {
 
         var self = this;
 
@@ -995,7 +995,7 @@ var ApiClient = /** @class */ (function () {
                         return false;
                 }
 
-                if (StringArrayContains(loanRowIdsToAdjustOpeningBalance, ln.LoanSchedules_Line_RowIdx)) {
+                if (stringArrayContains(loanRowIdsToAdjustOpeningBalance, ln.LoanSchedules_Line_RowIdx)) {
                     // Adjust - replace Opening Balance with calculated Closing Balance
                     ln.LoanSchedules_OpeningBalance = self.BudgetCalculator.CalculateLoanScheduleClosingBalance(ln);
                 }
@@ -1035,7 +1035,7 @@ var ApiClient = /** @class */ (function () {
 
     // #region Copy Overhead Costs
 
-    ApiClient.prototype.CopyOverheadCosts = function (budgetObj, newBudgetDateId, isSameYear) {
+    apiClient.prototype.CopyOverheadCosts = function (budgetObj, newBudgetDateId, isSameYear) {
 
         var self = this;
 
@@ -1050,7 +1050,7 @@ var ApiClient = /** @class */ (function () {
 
     };
 
-    ApiClient.prototype.CopyOverheadCost = function (overheadCost, newBudgetDateId, isSameYear) {
+    apiClient.prototype.CopyOverheadCost = function (overheadCost, newBudgetDateId, isSameYear) {
 
         function IsOverheadCostRelevent(oc) {
 
@@ -1077,7 +1077,7 @@ var ApiClient = /** @class */ (function () {
 
     // #region Copy Rent Schedules (aka Rental Costs)
 
-    ApiClient.prototype.CopyRentSchedules = function (budgetObj, newBudgetDateId, isSameYear) {
+    apiClient.prototype.CopyRentSchedules = function (budgetObj, newBudgetDateId, isSameYear) {
 
         var self = this;
 
@@ -1091,7 +1091,7 @@ var ApiClient = /** @class */ (function () {
             if (header.ModifiedData) {
                 // Copy header's lines
                 var srcLines = $.grep(budgetObj.RentScheduleLines, function (line) {
-                    return StringEquals(line.RentSchedules_Header_ID, srcHeaderId);
+                    return stringEquals(line.RentSchedules_Header_ID, srcHeaderId);
                 });
 
                 $.each(srcLines, function (idx, line) {
@@ -1102,7 +1102,7 @@ var ApiClient = /** @class */ (function () {
 
     };
 
-    ApiClient.prototype.CopyRentScheduleHeader = function (header, newBudgetDateId, isSameYear) {
+    apiClient.prototype.CopyRentScheduleHeader = function (header, newBudgetDateId, isSameYear) {
 
         header.RentSchedules_Header_ID = GenerateGuid(); // Assign new id
         header.RentSchedules_Header_YearEnd = newBudgetDateId; // Tie to the new budget copy
@@ -1110,7 +1110,7 @@ var ApiClient = /** @class */ (function () {
 
     };
 
-    ApiClient.prototype.CopyRentScheduleLine = function (line, newHeaderId, isSameYear) {
+    apiClient.prototype.CopyRentScheduleLine = function (line, newHeaderId, isSameYear) {
 
         line.RentSchedules_Line_ID = GenerateGuid(); // Assign new id
         line.RentSchedules_Header_ID = newHeaderId; // Tie to the new header copy
@@ -1121,7 +1121,7 @@ var ApiClient = /** @class */ (function () {
 
     // #region Copy Enterprise-to-Customers (for the specific Budget)
 
-    ApiClient.prototype.CopyEnterpriseToCustomers = function (budgetObj, newBudgetDateId, isSameYear) {
+    apiClient.prototype.CopyEnterpriseToCustomers = function (budgetObj, newBudgetDateId, isSameYear) {
 
         var self = this;
 
@@ -1134,7 +1134,7 @@ var ApiClient = /** @class */ (function () {
 
     };
 
-    ApiClient.prototype.CopyEnterpriseToCustomer = function (e2c, newBudgetDateId, isSameYear) {
+    apiClient.prototype.CopyEnterpriseToCustomer = function (e2c, newBudgetDateId, isSameYear) {
 
         e2c.Enter_Custom_ID = GenerateGuid(); // Assign new id
         e2c.Enter_Custo_YearEnd = newBudgetDateId; // Tie to the new budget copy
@@ -1623,42 +1623,42 @@ var ApiClient = /** @class */ (function () {
      * @param {bool} [resolveEmptyBudgetDateId] Flag specifying whether to resolve immediately if budgetDateId is empty. If false or not specified, the deferred is rejected.
      * @returns {JQueryPromise} Returns a promise that is resolved when the async operation completes.
      */
-    ApiClient.prototype.FetchBudget = function (budgetDateId, resolveEmptyBudgetDateId) {
+    apiClient.prototype.FetchBudget = function (budgetDateId, resolveEmptyBudgetDateId) {
 
         var self = this;
         var deferred = $.Deferred();
 
-        if (StringIsNullOrEmpty(budgetDateId) && resolveEmptyBudgetDateId) {
+        if (stringIsNullOrEmpty(budgetDateId) && resolveEmptyBudgetDateId) {
             // Resolve immediately if specified id is empty and ok to do so
             deferred.resolve(null);
             return deferred.promise();
         }
 
         // Start querying for the BudgetDate and its child tables
-        var defBudgetDate = self.DbQrySvc.QueryDeferred(DBName, tblBudgetDate, function filter(bd) { return StringEquals(bd.BudgetDate_ID, budgetDateId) && NotSoftDeleted(bd.BudgetDate_Deleted); }, self.TransformDeleteModifiedData, null, true);
-        var defArableCropReconcilHeaders = self.DbQrySvc.QueryDeferred(DBName, tblArableCropReconcilHeader, function (acrh) { return StringEquals(acrh.ArableCropRecon_YearEnd, budgetDateId) && NotSoftDeleted(acrh.ArableCropRecon_Deleted); }, self.TransformDeleteModifiedData);
-        var defBeefRearingCalHeaders = self.DbQrySvc.QueryDeferred(DBName, tblBeefRearingCalHeader, function (brch) { return StringEquals(brch.BeefRearing_Header_YearEnd, budgetDateId) && NotSoftDeleted(brch.BeefRearing_Header_Deleted); }, self.TransformDeleteModifiedData);
-        var defBreedingEweCalHeaders = self.DbQrySvc.QueryDeferred(DBName, tblBreedingEweCalHeader, function (bech) { return StringEquals(bech.BreedingEwes_Header_YearEnd, budgetDateId) && NotSoftDeleted(bech.BreedingEwes_Header_Deleted); }, self.TransformDeleteModifiedData);
-        var defCapexHeaders = self.DbQrySvc.QueryDeferred(DBName, tblCapexHeader, function (ch) { return StringEquals(ch.Capex_Header_YearEnd, budgetDateId) && NotSoftDeleted(ch.Capex_Header_Deleted); }, self.TransformDeleteModifiedData);
-        var defCashflowHeaders = self.DbQrySvc.QueryDeferred(DBName, tblCashflowHeader, function (ch) { return StringEquals(ch.Cashflow_Header_YearEnd, budgetDateId) && NotSoftDeleted(ch.Cashflow_Header_Deleted); }, self.TransformDeleteModifiedData);
-        var defCropSchedules = self.DbQrySvc.QueryDeferred(DBName, tblCropSchedule, function (cs) { return StringEquals(cs.CropSchedule_YearEnd, budgetDateId) && NotSoftDeleted(cs.CropSchedule_Deleted); }, self.TransformDeleteModifiedData);
-        var defDairyHerdCalHeaders = self.DbQrySvc.QueryDeferred(DBName, tblDairyHerdCalHeader, function (dhch) { return StringEquals(dhch.DairyHerdCal_Header_YearEnd, budgetDateId) && NotSoftDeleted(dhch.DairyHerdCal_Header_Deleted); }, self.TransformDeleteModifiedData);
-        var defDairyYoungstockCalHeaders = self.DbQrySvc.QueryDeferred(DBName, tblDairyYoungstockCalHeader, function (dych) { return StringEquals(dych.DairyYoungstockCal_Header_YearEnd, budgetDateId) && NotSoftDeleted(dych.DairyYoungstockCal_Header_Deleted); }, self.TransformDeleteModifiedData);
-        var defDOFs = self.DbQrySvc.QueryDeferred(DBName, tblDOF, function (d) { return StringEquals(d.DOF_YearEnd, budgetDateId) && NotSoftDeleted(d.DOF_Deleted); }, self.TransformDeleteModifiedData);
-        var defGrossMargins = self.DbQrySvc.QueryDeferred(DBName, tblGrossMargin, function (gm) { return StringEquals(gm.GrossMargin_YearEnd, budgetDateId) && NotSoftDeleted(gm.GrossMargin_Deleted); }, self.TransformDeleteModifiedData);
-        var defLoanScheduleHeaders = self.DbQrySvc.QueryDeferred(DBName, tblLoanScheduleHeader, function (lsh) { return StringEquals(lsh.LoanSchedules_Header_YearEnd, budgetDateId) && NotSoftDeleted(lsh.LoanSchedules_Header_Deleted); }, self.TransformDeleteModifiedData);
+        var defBudgetDate = self.DbQrySvc.QueryDeferred(DBName, tblBudgetDate, function filter(bd) { return stringEquals(bd.BudgetDate_ID, budgetDateId) && NotSoftDeleted(bd.BudgetDate_Deleted); }, self.TransformDeleteModifiedData, null, true);
+        var defArableCropReconcilHeaders = self.DbQrySvc.QueryDeferred(DBName, tblArableCropReconcilHeader, function (acrh) { return stringEquals(acrh.ArableCropRecon_YearEnd, budgetDateId) && NotSoftDeleted(acrh.ArableCropRecon_Deleted); }, self.TransformDeleteModifiedData);
+        var defBeefRearingCalHeaders = self.DbQrySvc.QueryDeferred(DBName, tblBeefRearingCalHeader, function (brch) { return stringEquals(brch.BeefRearing_Header_YearEnd, budgetDateId) && NotSoftDeleted(brch.BeefRearing_Header_Deleted); }, self.TransformDeleteModifiedData);
+        var defBreedingEweCalHeaders = self.DbQrySvc.QueryDeferred(DBName, tblBreedingEweCalHeader, function (bech) { return stringEquals(bech.BreedingEwes_Header_YearEnd, budgetDateId) && NotSoftDeleted(bech.BreedingEwes_Header_Deleted); }, self.TransformDeleteModifiedData);
+        var defCapexHeaders = self.DbQrySvc.QueryDeferred(DBName, tblCapexHeader, function (ch) { return stringEquals(ch.Capex_Header_YearEnd, budgetDateId) && NotSoftDeleted(ch.Capex_Header_Deleted); }, self.TransformDeleteModifiedData);
+        var defCashflowHeaders = self.DbQrySvc.QueryDeferred(DBName, tblCashflowHeader, function (ch) { return stringEquals(ch.Cashflow_Header_YearEnd, budgetDateId) && NotSoftDeleted(ch.Cashflow_Header_Deleted); }, self.TransformDeleteModifiedData);
+        var defCropSchedules = self.DbQrySvc.QueryDeferred(DBName, tblCropSchedule, function (cs) { return stringEquals(cs.CropSchedule_YearEnd, budgetDateId) && NotSoftDeleted(cs.CropSchedule_Deleted); }, self.TransformDeleteModifiedData);
+        var defDairyHerdCalHeaders = self.DbQrySvc.QueryDeferred(DBName, tblDairyHerdCalHeader, function (dhch) { return stringEquals(dhch.DairyHerdCal_Header_YearEnd, budgetDateId) && NotSoftDeleted(dhch.DairyHerdCal_Header_Deleted); }, self.TransformDeleteModifiedData);
+        var defDairyYoungstockCalHeaders = self.DbQrySvc.QueryDeferred(DBName, tblDairyYoungstockCalHeader, function (dych) { return stringEquals(dych.DairyYoungstockCal_Header_YearEnd, budgetDateId) && NotSoftDeleted(dych.DairyYoungstockCal_Header_Deleted); }, self.TransformDeleteModifiedData);
+        var defDOFs = self.DbQrySvc.QueryDeferred(DBName, tblDOF, function (d) { return stringEquals(d.DOF_YearEnd, budgetDateId) && NotSoftDeleted(d.DOF_Deleted); }, self.TransformDeleteModifiedData);
+        var defGrossMargins = self.DbQrySvc.QueryDeferred(DBName, tblGrossMargin, function (gm) { return stringEquals(gm.GrossMargin_YearEnd, budgetDateId) && NotSoftDeleted(gm.GrossMargin_Deleted); }, self.TransformDeleteModifiedData);
+        var defLoanScheduleHeaders = self.DbQrySvc.QueryDeferred(DBName, tblLoanScheduleHeader, function (lsh) { return stringEquals(lsh.LoanSchedules_Header_YearEnd, budgetDateId) && NotSoftDeleted(lsh.LoanSchedules_Header_Deleted); }, self.TransformDeleteModifiedData);
         //var defOtherCropReconHeaders = self.DbQrySvc.QueryDeferred(DBName, tblOtherCropReconHeader, function (ocrh) { return StrEq(ocrh.OtherCropRecon_YearEnd, budgetDateId) && NotSoftDeleted(ocrh.OtherCropRecon_Deleted); }, self.TransformDeleteModifiedData);
         //var defOtherLivestockCalHeaders = self.DbQrySvc.QueryDeferred(DBName, tblOtherLivestockCalHeader, function (olh) { return StrEq(olh.OtherLivestock_Header_YearEnd, budgetDateId) && NotSoftDeleted(olh.OtherLivestock_Header_Deleted); }, self.TransformDeleteModifiedData);
         //var defOtherRearingCalHeaders = self.DbQrySvc.QueryDeferred(DBName, tblOtherRearingCalHeader, function (orh) { return StrEq(orh.OtherRearing_Header_YearEnd, budgetDateId) && NotSoftDeleted(orh.OtherRearing_Header_Deleted); }, self.TransformDeleteModifiedData);
-        var defOverheadCosts = self.DbQrySvc.QueryDeferred(DBName, tblOverheadCost, function (oc) { return StringEquals(oc.OverheadCosts_YearEnd, budgetDateId) && NotSoftDeleted(oc.OverheadCosts_Deleted); }, self.TransformDeleteModifiedData);
-        var defRentScheduleHeaders = self.DbQrySvc.QueryDeferred(DBName, tblRentScheduleHeader, function (rsh) { return StringEquals(rsh.RentSchedules_Header_YearEnd, budgetDateId) && NotSoftDeleted(rsh.RentSchedules_Header_Deleted); }, self.TransformDeleteModifiedData);
-        var defSubsidiesHeaders = self.DbQrySvc.QueryDeferred(DBName, tblSubsidiesHeader, function (sh) { return StringEquals(sh.Subsidies_Header_YearEnd, budgetDateId) && NotSoftDeleted(sh.Subsidies_Header_Deleted); }, self.TransformDeleteModifiedData);
-        var defSucklerCowCalHeaders = self.DbQrySvc.QueryDeferred(DBName, tblSucklerCowCalHeader, function (scch) { return StringEquals(scch.SucklerCows_Header_YearEnd, budgetDateId) && NotSoftDeleted(scch.SucklerCows_Header_Deleted); }, self.TransformDeleteModifiedData);
+        var defOverheadCosts = self.DbQrySvc.QueryDeferred(DBName, tblOverheadCost, function (oc) { return stringEquals(oc.OverheadCosts_YearEnd, budgetDateId) && NotSoftDeleted(oc.OverheadCosts_Deleted); }, self.TransformDeleteModifiedData);
+        var defRentScheduleHeaders = self.DbQrySvc.QueryDeferred(DBName, tblRentScheduleHeader, function (rsh) { return stringEquals(rsh.RentSchedules_Header_YearEnd, budgetDateId) && NotSoftDeleted(rsh.RentSchedules_Header_Deleted); }, self.TransformDeleteModifiedData);
+        var defSubsidiesHeaders = self.DbQrySvc.QueryDeferred(DBName, tblSubsidiesHeader, function (sh) { return stringEquals(sh.Subsidies_Header_YearEnd, budgetDateId) && NotSoftDeleted(sh.Subsidies_Header_Deleted); }, self.TransformDeleteModifiedData);
+        var defSucklerCowCalHeaders = self.DbQrySvc.QueryDeferred(DBName, tblSucklerCowCalHeader, function (scch) { return stringEquals(scch.SucklerCows_Header_YearEnd, budgetDateId) && NotSoftDeleted(scch.SucklerCows_Header_Deleted); }, self.TransformDeleteModifiedData);
         //var defTradingSummaries = self.DbQrySvc.QueryDeferred(DBName, tblTradingSummary, function (ts) { return StrEq(ts.TradingSummary_YearEnd, budgetDateId) && NotSoftDeleted(ts.TradingSummary_Deleted); }, self.TransformDeleteModifiedData);
-        var defTransfers = self.DbQrySvc.QueryDeferred(DBName, tblTransfer, function (t) { return StringEquals(t.Transfer_YearEnd, budgetDateId) && NotSoftDeleted(t.Transfer_Deleted); }, self.TransformDeleteModifiedData);
+        var defTransfers = self.DbQrySvc.QueryDeferred(DBName, tblTransfer, function (t) { return stringEquals(t.Transfer_YearEnd, budgetDateId) && NotSoftDeleted(t.Transfer_Deleted); }, self.TransformDeleteModifiedData);
         //var defWfnpImports = self.DbQrySvc.QueryDeferred(DBName, tblWfnpImport, function (wi) { return StrEq(wi.WFNPImport_BudgetDate_ID, budgetDateId) && NotSoftDeleted(wi.WFNPImport_Deleted); }, self.TransformDeleteModifiedData);
         var defEnterpriseMasters = self.DbQrySvc.QueryDeferred(DBName, tblEnterpriseMaster, function (em) { return NotSoftDeleted(em.Enterprise_Deleted); });
-        var defBalanceSheets = self.DbQrySvc.QueryDeferred(DBName, tblBalanceSheet, function (bs) { return StringEquals(bs.BalanceSheet_YearEnd, budgetDateId) && NotSoftDeleted(bs.BalanceSheet_Deleted); }, self.TransformDeleteModifiedData);
+        var defBalanceSheets = self.DbQrySvc.QueryDeferred(DBName, tblBalanceSheet, function (bs) { return stringEquals(bs.BalanceSheet_YearEnd, budgetDateId) && NotSoftDeleted(bs.BalanceSheet_Deleted); }, self.TransformDeleteModifiedData);
 
         // Wait for all queries to complete
         $.when(defBudgetDate, defArableCropReconcilHeaders, defBeefRearingCalHeaders, defBreedingEweCalHeaders, defCapexHeaders,
@@ -1751,7 +1751,7 @@ var ApiClient = /** @class */ (function () {
      * FetchBudgetGrandchildren : Gets the child table data that hangs off the BudgetDate table from IndexedDB
      * @param arableCropReconcilHeaders : The Arable Crop Headers whose children we want
      */
-    ApiClient.prototype.FetchBudgetGrandchildren = function (arableCropReconcilHeaders, beefRearingCalHeaders, breedingEweCalHeaders, capexHeaders, cashflowHeaders,
+    apiClient.prototype.FetchBudgetGrandchildren = function (arableCropReconcilHeaders, beefRearingCalHeaders, breedingEweCalHeaders, capexHeaders, cashflowHeaders,
         dairyHerdCalHeaders, dairyYoungstockCalHeaders, loanScheduleHeaders, /*otherCropReconHeaders,*/ /*otherLivestockCalHeaders,*/
         /*otherRearingCalHeaders,*/ rentScheduleHeaders, subsidiesHeaders, sucklerCowCalHeaders, customerId, budgetDateId, enterpriseMasters) {
 
@@ -1775,8 +1775,8 @@ var ApiClient = /** @class */ (function () {
         var defSucklerCowCalLines = self.DbQrySvc.QueryInnerJoinDeferred(DBName, tblSucklerCowCalLine, function filter(sccl) { return NotSoftDeleted(sccl.SucklerCowsCalendar_Line_Deleted); }, self.TransformDeleteModifiedData, null, sucklerCowCalHeaders, "SucklerCowsCalendar_Header_ID", "SucklerCows_Header_ID");
 
         var defEnterpriseToCustomers = self.DbQrySvc.QueryInnerJoinDeferred(DBName, tblEnterpriseToCustomer, function (e2c) {
-            return StringEquals(e2c.Enter_Custo_YearEnd, budgetDateId)
-                && StringEquals(e2c.Enter_Custo_CustomerID, customerId)
+            return stringEquals(e2c.Enter_Custo_YearEnd, budgetDateId)
+                && stringEquals(e2c.Enter_Custo_CustomerID, customerId)
                 && NotSoftDeleted(e2c.Enter_Custom_IsDeleted);
         }, null, "Enterprise_Name", enterpriseMasters, "Enter_Custo_EnterpriseID", "Enterprise_ID");
 
@@ -1803,7 +1803,7 @@ var ApiClient = /** @class */ (function () {
      * @param {any} dbItem The database record whose ModifiedData property is to be deleted.
      * @returns {any} The modified dbItem.
      */
-    ApiClient.prototype.TransformDeleteModifiedData = function (dbItem) {
+    apiClient.prototype.TransformDeleteModifiedData = function (dbItem) {
 
         delete dbItem.ModifiedData;
 
@@ -1814,13 +1814,13 @@ var ApiClient = /** @class */ (function () {
     Gets the BudgetDates for the specified Customer ID and optional Budget Type.
     @param {string} customerId ID of the Customer whose Budgets are wanted.
     */
-    ApiClient.prototype.FetchCustomerBudgetDates = function (customerId) {
+    apiClient.prototype.FetchCustomerBudgetDates = function (customerId) {
 
         return this.DbQrySvc.QueryDeferred(
             DBName,
             tblBudgetDate,
             function filter(bd) {
-                return StringEquals(bd.BudgetDate_Customer_ID, customerId)
+                return stringEquals(bd.BudgetDate_Customer_ID, customerId)
                     && NotSoftDeleted(bd.BudgetDate_Deleted);
             },
             function transform(bd) {
@@ -1835,7 +1835,7 @@ var ApiClient = /** @class */ (function () {
 
     // #region Saving
 
-    ApiClient.prototype.SaveCopiedBudget = function (budgetObj) {
+    apiClient.prototype.SaveCopiedBudget = function (budgetObj) {
 
         var self = this;
         var deferred = $.Deferred();
@@ -1940,17 +1940,17 @@ var ApiClient = /** @class */ (function () {
     @param {string} [idToIgnore] Optional Budget Date ID (guid) to ignore. i.e. use this when an existing Budget is about to be saved and we want to see if there are any others with the same date and version.
     @return {JQueryPromise<Boolean>} A promise that is resolved with a true/false flag when the async operation completes.
     */
-    ApiClient.prototype.DoesVersionExist = function (customerId, yearEndDate, versionNo, idToIgnore) {
+    apiClient.prototype.DoesVersionExist = function (customerId, yearEndDate, versionNo, idToIgnore) {
 
         var self = this;
         var deferred = $.Deferred();
 
         self.DbQrySvc.QueryDeferred(DBName, tblBudgetDate, function filter(bd) {
 
-            return StringEquals(bd.BudgetDate_Customer_ID, customerId)
+            return stringEquals(bd.BudgetDate_Customer_ID, customerId)
                 && AreDatesEqual(bd.BudgetDate_Date, yearEndDate)
-                && StringEquals(bd.BudgetDate_VersionNo, versionNo)
-                && (StringIsNullOrEmpty(idToIgnore) || !StringEquals(bd.BudgetDate_ID, idToIgnore));
+                && stringEquals(bd.BudgetDate_VersionNo, versionNo)
+                && (stringIsNullOrEmpty(idToIgnore) || !stringEquals(bd.BudgetDate_ID, idToIgnore));
         })
             .done(function (budgetDates) {
                 var versionExists = budgetDates.length > 0;
@@ -1969,7 +1969,7 @@ var ApiClient = /** @class */ (function () {
     * @param {number} newWorkflowStatusId The id of the BudgetWorkflowStatus to change to.
     * @returns {JQueryPromise} Returns a promise that is resolved when the async operation completes.
     */
-    ApiClient.prototype.UpdateWorkflowStatus = function (budgetDateId, newWorkflowStatusId) {
+    apiClient.prototype.UpdateWorkflowStatus = function (budgetDateId, newWorkflowStatusId) {
 
         var self = this;
         var deferred = $.Deferred();
@@ -1999,6 +1999,6 @@ var ApiClient = /** @class */ (function () {
     // #endregion Saving
 
     // Return the constructor
-    return ApiClient;
+    return apiClient;
 
 })();

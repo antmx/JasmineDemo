@@ -76,7 +76,7 @@ function Sync_Start(onCompletedFn, changesOnly, credentials, deviceId) {
     mSyncCredentials = credentials;
     mSyncDeviceID = deviceId;
     mSyncError = null;
-    mSyncDbQuerySvc = new IndexedDbSvc();
+    mSyncDbQuerySvc = new indexedDbSvc();
 
     if (!IsOnline()) {
         mSyncOnCompletedFn.call(null, false, "offline");
@@ -295,7 +295,7 @@ function Sync_DB_Transaction_Open(db) {
         Sync_Message("Completed");
         Sync_EnableScreen();
 
-        if (StringIsNullOrEmpty(mSyncError)) {
+        if (stringIsNullOrEmpty(mSyncError)) {
             RecentlyAddedCustomers("clear");
             CheckHaveUnSentData(false);
             mSyncOnCompletedFn.call(null, true);
@@ -370,7 +370,7 @@ function Sync_InitSyncWithServer() {
             if (syncInfo && syncInfo.length > 0) {
                 syncInfo = syncInfo[0];
 
-                if (StringEquals(syncInfo.CanSync, "true")) {
+                if (stringEquals(syncInfo.CanSync, "true")) {
 
                     mSyncID = syncInfo.SyncID;
                     mSyncResetDB = syncInfo.ResetDB;
@@ -1315,7 +1315,7 @@ function Sync_UploadTsdgVisitMgmtInfoSrcNameLkps() {
 
 function Sync_Upload_Complete() {
 
-    if (!StringIsNullOrEmpty(mSyncError)) {
+    if (!stringIsNullOrEmpty(mSyncError)) {
         // Error occurred during an upload, so do not start download as we don't want to overwrite local data until we've fixed the upload failure
         return;
     }
@@ -2134,10 +2134,10 @@ function Sync_HandleError(e) {
         if (mSyncRequestingData) {
             processTask += "Requesting data";
         }
-        if (StringIsNullOrEmpty(errorDescription)) {
+        if (stringIsNullOrEmpty(errorDescription)) {
             errorDescription = "";
         }
-        if (StringIsNullOrEmpty(processTask)) {
+        if (stringIsNullOrEmpty(processTask)) {
             processTask = "";
         }
 

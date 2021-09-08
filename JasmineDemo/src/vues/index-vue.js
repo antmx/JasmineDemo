@@ -6,7 +6,7 @@ var indexVue = new Vue({
 
     data: {
         name: 'Vue.js',
-        idxDbSvc: new IndexedDbSvc("DemoDb"),
+        idxDbSvc: new indexedDbSvc("DemoDb"),
         dbCreated: false,
         storeSchemas: [
             {

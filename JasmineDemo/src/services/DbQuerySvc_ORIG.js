@@ -17,7 +17,7 @@ var IndexedDbSvc = (function () {
 
     var ObjectToSortable = function (obj) {
 
-        if (obj !== null && obj !== undefined && IsString(obj)) {
+        if (obj !== null && obj !== undefined && isString(obj)) {
             return obj.toLowerCase();
         }
 
@@ -213,7 +213,7 @@ var IndexedDbSvc = (function () {
          */
         var callBackFunction = function (resultItems, errorMsg) {
 
-            if (!StringIsNullOrEmpty(errorMsg)) {
+            if (!stringIsNullOrEmpty(errorMsg)) {
                 deferred.reject(errorMsg);
                 return;
             }
@@ -296,7 +296,7 @@ var IndexedDbSvc = (function () {
                             arrItm = arrItm[arrayField];
                         }
 
-                        return StringEquals(arrItm, dbItemFieldValue);
+                        return stringEquals(arrItm, dbItemFieldValue);
                     });
 
                     if (matchingArrayItems.length > 0) {
@@ -359,7 +359,7 @@ var IndexedDbSvc = (function () {
 
                     matchingArrayItems = grep(joinArray, function (arrItm) {
 
-                        return StringEquals(arrItm[arrayField], dbItemFieldValue);
+                        return stringEquals(arrItm[arrayField], dbItemFieldValue);
                     });
 
                     if (matchingArrayItems.length > 0) {
@@ -687,7 +687,7 @@ var IndexedDbSvc = (function () {
 
                     // Build filter function
                     var filterFn = function (dbItem) {
-                        return StringArrayContains(primaryKeyValsOrFilterFn, dbItem[pkName]);
+                        return stringArrayContains(primaryKeyValsOrFilterFn, dbItem[pkName]);
                     };
 
                     ProceedWithUpdate(filterFn);
