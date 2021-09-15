@@ -1,8 +1,12 @@
 ﻿/// <reference path="../src/stringfuncs.js" />
 
+jasmine.getEnv().configure({ random: false });
+
 describe("stringFuncs", function () {
 
-    jasmine.getEnv().configure({ random: false });
+    beforeEach(function () {
+
+    });
 
     describe("stringEquals", function () {
 
@@ -29,7 +33,7 @@ describe("stringFuncs", function () {
     });
 
     describe("stringIsNullOrEmpty", function () {
-
+        
         it("should return true for null", function () {
 
             var result = stringIsNullOrEmpty(null);

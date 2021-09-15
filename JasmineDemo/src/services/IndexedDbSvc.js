@@ -713,71 +713,108 @@ var indexedDbSvc = (function () {
     /**
      * Deletes from given store the rows whose primary-key index value matches one of the specified values. Returns a Promise which handles the async operation.
      * @param {string} storeName The IndexedDB store/table name.
-     * @param {any|array<any>} primaryKeyVals A single, or array of, primary key values identifying the rows to delete.
-     * @returns {Promise} Promise that is resolved when the async store operation completes.
+     * @param {any|ArrayLike<any>} primaryKeyVals A single, or array of, primary key values identifying the rows to delete.
+     * @param {string} indexName Optional string name of a particular store index that will be used to identify the rows to delete. Defaults to the store's primary key index.
+     * @returns {Promise} Promise that is resolved when the async delete operation completes.
      */
-    indexedDbSvc.prototype.delete = function (storeName, /*indexName,*/ primaryKeyVals) {
+    indexedDbSvc.prototype.delete = function (storeName, indexVals, indexName) {
+
+        var self = this;
 
         return new Promise(function (resolve, reject) {
 
-            var openDbRequest = indexedDB.open(_dbName);
+            self.getPrimaryKeyName(storeName)
+                .then(function (pkName) {
 
-            openDbRequest.onsuccess = function (evt) {
+                    indexName = indexName || pkName;
 
-                try {
-                    /** @type {IDBDatabase} */
-                    var db = evt.target.result;
-                    var tx = db.transaction(storeName, "readwrite");
-                    var store = tx.objectStore(storeName);
-                    //var index = store.index(indexName);
+                    var openDbRequest = indexedDB.open(_dbName);
 
-                    var qtyRowsToDelete = 0;
+                    openDbRequest.onsuccess = function (evt) {
 
-                    if (!Array.isArray(primaryKeyVals)) {
-                        // Make an array containing the one item
-                        primaryKeyVals = [primaryKeyVals];
-                        qtyRowsToDelete = 1;
-                    }
-                    else {
-                        qtyRowsToDelete = primaryKeyVals.length;
-                    }
+                        try {
+                            /** @type {IDBDatabase} */
+                            var db = evt.target.result;
+                            var tx = db.transaction(storeName, "readwrite");
+                            var store = tx.objectStore(storeName);
+                            var index = store.index(indexName);
 
-                    // Delete the row for each key
-                    _forEach(primaryKeyVals, function (idx, keyVal) {
-                        store.delete(keyVal);
-                    });
+                            var qtyRowsDeleted = 0;
 
-                    tx.oncomplete = function (evt) {
-                        resolve(qtyRowsToDelete); // Signal success and number of rows deleted
+                            if (!Array.isArray(indexVals)) {
+                                // Make an array containing the one item
+                                indexVals = [indexVals];
+                            }
+
+                            // Put in ascending order so we can form a key range for openCursor
+                            indexVals.sort();
+
+                            // Open a cursor spanning the lowest to highest key values
+                            var request = index.openCursor(IDBKeyRange.bound(indexVals[0], indexVals[indexVals.length - 1]));
+
+                            request.onsuccess = function () {
+
+                                var cursor = request.result;
+
+                                if (cursor) {
+
+                                    var nextId = request.result.key;
+
+                                    if (indexVals.indexOf(nextId) > -1) {
+                                        cursor.delete();
+                                        qtyRowsDeleted++;
+                                    }
+
+                                    cursor.continue();
+                                }
+                            }
+
+                            request.onerror = function () {
+                                console.error("Delete openCursor onerror for " + storeName + " " + evt);
+                                reject("Delete openCursor error"); // Signal error
+                            };
+
+                            tx.oncomplete = function (evt) {
+                                resolve(qtyRowsDeleted); // Signal success and number of rows actually deleted
+                            };
+
+                            tx.onerror = function (evt) {
+                                console.error("Delete tx onerror for " + storeName + " " + evt);
+                                reject("Delete tx error"); // Signal error
+                            };
+
+                            tx.onabort = function (evt) {
+                                console.error("Delete tx abort for " + storeName + " " + evt);
+                                reject("Delete tx aborted"); // Signal error
+                            };
+                        }
+                        catch (e) {
+                            console.error("Error in Delete for " + storeName + " - " + e);
+                            reject("Error in Delete for " + storeName + " - " + e);
+                        }
+                        finally {
+                            db.close();
+                        }
                     };
 
-                    tx.onerror = function (evt) {
-                        console.error("Delete onerror for " + storeName + " " + evt);
-                        reject("Delete tx error"); // Signal error
+                    openDbRequest.onblocked = function (evt) {
+
+                        console.error("Delete openDbRequest onblocked for " + storeName + " " + evt);
+                        reject("Delete openDbRequest onblocked"); // Signal error
                     };
 
-                    tx.onabort = function (evt) {
-                        console.error("Delete abort for " + storeName + " " + evt);
-                        reject("Delete tx aborted"); // Signal error
+                    openDbRequest.onerror = function (evt) {
+
+                        console.error("Delete openDbRequest onerror for " + storeName + " " + evt);
+                        reject("Delete openDbRequest onerror"); // Signal error
                     };
-                }
-                catch (e) {
-                    console.error("Error in Delete for " + storeName + " - " + e);
-                    reject();
-                }
-            };
 
-            openDbRequest.onblocked = function (evt) {
+                })
+                .catch(function (failReason) {
+                    reject(failReason);
+                });
 
-                console.error("onblocked in Delete for " + storeName + " " + evt);
-                reject("Delete db open onblocked"); // Signal error
-            };
 
-            openDbRequest.onerror = function (evt) {
-
-                console.error("onerror in Delete for " + storeName + " " + evt);
-                reject("Delete db open onerror"); // Signal error
-            };
         });
     };
 
@@ -808,7 +845,7 @@ var indexedDbSvc = (function () {
 
                     var store = tx.objectStore(storeName);
 
-                    store.objectStore(storeName).clear();
+                    store.clear();
 
                     tx.oncomplete = function (evt) {
                         resolve(); // Signal success

@@ -46,13 +46,14 @@
                         <div class="row">
                             <div class="col-sm-9">{{ row }}</div>
                             <div class="col-sm-3 text-end">
-                                <button class="btn btn-xs btn-secondary" v-on:click="showStoreItemEditor(row.PolicyID || row.CustomerID)">Edit</button>
-                                <button class="btn btn-xs btn-danger">Delete</button>
+                                <button class="btn btn-xs btn-secondary" v-on:click="showStoreItemEditor(getStoreItemId(row, activeStoreName), activeStoreName)">Edit</button>
+                                <button class="btn btn-xs btn-danger" v-on:click="deleteStoreItem(getStoreItemId(row, activeStoreName), activeStoreName)">Delete</button>
                             </div>
                         </div>
                     </li>
                     <li class="list-group-item list-group-item-action">
                         <button class="btn btn-sm btn-success" v-on:click="showStoreItemEditor(null)">Add {{activeStoreName || "item"}}</button>
+                        <button class="btn btn-sm btn-warning" v-on:click="clearSelectedStore()">Clear {{activeStoreName || "item"}} store</button>
                     </li>
                 </ul>
 

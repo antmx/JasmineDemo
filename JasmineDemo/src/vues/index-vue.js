@@ -143,13 +143,13 @@ var indexVue = new Vue({
             this.idxDbSvc.storeMany(dataToStore);
         },
 
-        showStoreItemEditor: function (itemIdentifier) {
+        showStoreItemEditor: function (itemIdentifier, activeStoreName) {
 
             var self = this;
 
             this.clearSelectedItems();
 
-            switch (this.activeStoreName) {
+            switch (activeStoreName) {
                 case "Customer":
                     if (itemIdentifier != null) {
                         this.idxDbSvc
@@ -179,7 +179,45 @@ var indexVue = new Vue({
                     break;
 
                 default:
-                    console.error("Unexpected activeStoreName: " + this.activeStoreName);
+                    console.error("Unexpected activeStoreName: " + activeStoreName);
+            }
+        },
+
+        deleteStoreItem: async function (itemIdentifier, storeName) {
+
+            switch (storeName) {
+                case "Customer":
+                    if (itemIdentifier == this.selectedCustomer.CustomerID) {
+                        this.selectedCustomer = {};
+                    }
+                    break;
+
+                case "Policy":
+                    if (itemIdentifier == this.selectedPolicy.PolicyID) {
+                        this.selectedPolicy = {};
+                    }
+                    break;
+
+                default:
+                    console.error("Unexpected storeName: " + storeName);
+            }
+            
+            //this.idxDbSvc
+            //    .delete(storeName, itemIdentifier)
+            //    .then(function (qtyRowsDeleted) {
+            //        console.log(qtyRowsDeleted + " items deleted from " + storeName);
+            //    });
+
+            var qtyRowsDeleted = await this.idxDbSvc.delete(storeName, itemIdentifier);
+            console.log(qtyRowsDeleted + " items deleted from " + storeName);
+        },
+
+        getStoreItemId: function (storeItem, storeName) {
+
+            switch (storeName) {
+                case "Customer": return storeItem.CustomerID;
+                case "Policy": return storeItem.PolicyID;
+                default: throw new Error("Unexpected storeName: " + storeName);
             }
         },
 
@@ -187,6 +225,13 @@ var indexVue = new Vue({
 
             this.selectedCustomer = {};
             this.selectedPolicy = {};
+        },
+
+        clearSelectedStore: function () {
+
+            this.idxDbSvc.truncate(this.activeStoreName);
+            this.storeData = [];
+            this.clearSelectedItems();
         }
     },
 
