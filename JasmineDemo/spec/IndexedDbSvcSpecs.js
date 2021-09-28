@@ -6,31 +6,40 @@ describe("indexedDbSvc", function () {
     const _indexedDbSvc = new indexedDbSvc(dbName);
     jasmine.getEnv().configure({ random: false });
 
+    const storeSpecs = [
+        {
+            storeName: "Customer",
+            indexes: [
+                { name: "CustomerID", isUnique: true },
+                { name: "CustomerRef", isUnique: true },
+                { name: "CustomerName", isUnique: false }
+            ],
+            addModifiedDataCol: true
+        },
+        {
+            storeName: "Policy",
+            indexes: [
+                { name: "PolicyID", isUnique: true },
+                { name: "PolicyRef", isUnique: true },
+                { name: "CustomerID", isUnique: false }
+            ],
+            addModifiedDataCol: true
+        },
+    ];
+
     beforeAll(function () {
 
         return _indexedDbSvc.deleteDatabase()
             .then(function () {
 
-                var storeSpecs = [
-                    {
-                        storeName: "Customer",
-                        indexes: [
-                            { name: "CustomerID", isUnique: true },
-                            { name: "CustomerRef", isUnique: true },
-                            { name: "CustomerName", isUnique: false }
-                        ],
-                        addModifiedDataCol: true
-                    },
-                    {
-                        storeName: "Policy",
-                        indexes: [
-                            { name: "PolicyID", isUnique: true },
-                            { name: "PolicyRef", isUnique: true },
-                            { name: "CustomerID", isUnique: false }
-                        ],
-                        addModifiedDataCol: true
-                    },
-                ];
+                return _indexedDbSvc.createDatabase(1, storeSpecs);
+            });
+    });
+
+    beforeEach(function () {
+
+        return _indexedDbSvc.deleteDatabase()
+            .then(function () {
 
                 return _indexedDbSvc.createDatabase(1, storeSpecs);
             });
@@ -100,7 +109,7 @@ describe("indexedDbSvc", function () {
         });
     });
 
-    describe("Store", function () {
+    describe("store", function () {
 
         it("should store a single item in the given store", function () {
 
@@ -173,36 +182,55 @@ describe("indexedDbSvc", function () {
 
         it("should return all rows when no filter function provided", function () {
 
-            return _indexedDbSvc.select("Customer")
-                .then(function (customers) {
+            var customersToStore = [
+                { CustomerID: 124, CustomerRef: "CUST004", CustomerName: "B Test" },
+                { CustomerID: 125, CustomerRef: "CUST005", CustomerName: "C Test" }
+            ];
 
-                    expect(customers.length).toBeGreaterThan(0);
+            return _indexedDbSvc.store("Customer", customersToStore)
+                .then(function (qtyStore) {
+                    return _indexedDbSvc.select("Customer");
+                })
+                .then(function (customers) {
+                    expect(customers.length).toEqual(customersToStore.length);
+                    expect(customers[0].CustomerID).toEqual(124);
                 });
         });
 
         it("should return only matching rows when filter function provided", function () {
 
-            return _indexedDbSvc.select("Customer", { filterFn: function (c) { return c.CustomerID === 123; } })
-                .then(function (customers) {
+            var customersToStore = [
+                { CustomerID: 124, CustomerRef: "CUST004", CustomerName: "B Test" },
+                { CustomerID: 125, CustomerRef: "CUST005", CustomerName: "C Test" }
+            ];
 
-                    expect(customers.length).toEqual(1);
-                    expect(customers[0].CustomerID).toEqual(123);
+            return _indexedDbSvc.store("Customer", customersToStore)
+                .then(function (qtyStore) {
+
+                    return _indexedDbSvc.select("Customer", { filterFn: function (c) { return c.CustomerID === 124; } });
                 })
+                .then(function (customers) {
+                    expect(customers.length).toEqual(1);
+                    expect(customers[0].CustomerID).toEqual(124);
+                });
         });
 
         it("should return items in descending order when orderBy field set and sortAscending flag to false", function () {
 
-            return _indexedDbSvc.select(
-                "Customer",
-                {
-                    orderBy: "CustomerID",
-                    sortAscending: false
-                }
-            ).then(function (customers) {
+            var customersToStore = [
+                { CustomerID: 124, CustomerRef: "CUST004", CustomerName: "B Test" },
+                { CustomerID: 125, CustomerRef: "CUST005", CustomerName: "C Test" }
+            ];
 
-                expect(customers.length).toEqual(5);
-                expect(customers[0].CustomerID).toEqual(127);
-            })
+            return _indexedDbSvc.store("Customer", customersToStore)
+                .then(function (qtyStore) {
+
+                    return _indexedDbSvc.select("Customer", { orderBy: "CustomerID", sortAscending: false });
+                })
+                .then(function (customers) {
+                    expect(customers.length).toEqual(2);
+                    expect(customers[0].CustomerID).toEqual(125);
+                });
         });
     });
 
@@ -210,20 +238,37 @@ describe("indexedDbSvc", function () {
 
         it("Returns at least one instance of all left items and possibly more merged with each matching right items", function () {
 
-            /** @type {selectLeftJoinOptions} */
-            var options = {
-                leftStoreName: "Customer",
-                leftFilterFn: function (c) { return [123, 127].indexOf(c.CustomerID) > -1; },
-                leftJoinField: "CustomerID",
-                rightStoreName: "Policy",
-                rightFilterFn: null,
-                rightJoinField: "CustomerID",
-                sortAscending: false,
-                transformFnOrSelectDbItemsOnly: null,
-                orderBy: null
-            };
+            var customersToStore = [
+                { CustomerID: 123, CustomerRef: "CUST123", CustomerName: "A Test" },
+                { CustomerID: 124, CustomerRef: "CUST124", CustomerName: "B Test" },
+                { CustomerID: 125, CustomerRef: "CUST125", CustomerName: "C Test" }
+            ];
 
-            return _indexedDbSvc.selectLeftJoin(options)
+            var policiesToStore = [
+                { PolicyID: 234, PolicyRef: "POL004", CustomerID: 123 },
+                { PolicyID: 235, PolicyRef: "POL005", CustomerID: 123 }
+            ];
+
+            recordsToStore = [["Customer", customersToStore], ["Policy", policiesToStore]];
+
+            return _indexedDbSvc.storeMany(recordsToStore)
+                .then(function () {
+
+                    /** @type {selectLeftJoinOptions} */
+                    var options = {
+                        leftStoreName: "Customer",
+                        leftFilterFn: function (c) { return [123, 125].indexOf(c.CustomerID) > -1; },
+                        leftJoinField: "CustomerID",
+                        rightStoreName: "Policy",
+                        rightFilterFn: null,
+                        rightJoinField: "CustomerID",
+                        sortAscending: false,
+                        transformFnOrSelectDbItemsOnly: null,
+                        orderBy: null
+                    };
+
+                    return _indexedDbSvc.selectLeftJoin(options);
+                })
                 .then(function (results) {
 
                     expect(results.length).toEqual(3);
@@ -232,12 +277,154 @@ describe("indexedDbSvc", function () {
 
                         if (item.CustomerID == 123) {
                             expect(item.CustomerID).toBeGreaterThanOrEqual(123);
-                            expect(item.PolicyID).toBeUndefined();
-                        }
-                        else if (item.CustomerID == 127) {
-                            expect(item.CustomerID).toBeGreaterThanOrEqual(127);
                             expect(item.PolicyID).toBeGreaterThan(0);
                         }
+                        else if (item.CustomerID == 125) {
+                            expect(item.CustomerID).toBeGreaterThanOrEqual(125);
+                            expect(item.PolicyID).toBeUndefined();
+                        }
+                    })
+                });
+
+        });
+    });
+
+    describe("selectInnerJoin", function () {
+
+        it("Returns instances of all left items merged with each matching right items, only where there is a match", function () {
+
+            var customersToStore = [
+                { CustomerID: 123, CustomerRef: "CUST123", CustomerName: "A Test" },
+                { CustomerID: 124, CustomerRef: "CUST124", CustomerName: "B Test" },
+                { CustomerID: 125, CustomerRef: "CUST125", CustomerName: "C Test" }
+            ];
+
+            var policiesToStore = [
+                { PolicyID: 234, PolicyRef: "POL004", CustomerID: 123 },
+                { PolicyID: 235, PolicyRef: "POL005", CustomerID: 123 },
+                { PolicyID: 236, PolicyRef: "POL006", CustomerID: 124 }
+            ];
+
+            recordsToStore = [["Customer", customersToStore], ["Policy", policiesToStore]];
+
+            return _indexedDbSvc.storeMany(recordsToStore)
+                .then(function () {
+
+                    /** @type {selectLeftJoinOptions} */
+                    var options = {
+                        leftStoreName: "Customer",
+                        leftFilterFn: function (c) { return c.CustomerID == 123; },
+                        leftJoinField: "CustomerID",
+                        rightStoreName: "Policy",
+                        rightFilterFn: null,
+                        rightJoinField: "CustomerID",
+                        sortAscending: false,
+                        transformFnOrSelectDbItemsOnly: null,
+                        orderBy: null
+                    };
+
+                    return _indexedDbSvc.selectLeftJoin(options);
+                })
+                .then(function (results) {
+
+                    expect(results.length).toEqual(2);
+
+                    forEach(results, function (idx, item) {
+
+                        expect(item.CustomerID).toEqual(123);
+                        expect(item.PolicyID).toBeGreaterThan(0);
+                    })
+                });
+        });
+    });
+
+    describe("selectLeftJoinOnArray", function () {
+
+        it("Returns at least one instance of any left (store) items and merged with any matching right (array) items only where there is a match", function () {
+
+            var customersToStore = [
+                { CustomerID: 123, CustomerRef: "CUST123", CustomerName: "A Test" },
+                { CustomerID: 124, CustomerRef: "CUST124", CustomerName: "B Test" },
+                { CustomerID: 125, CustomerRef: "CUST125", CustomerName: "C Test" }
+            ];
+
+            return _indexedDbSvc.store("Customer", customersToStore)
+                .then(function () {
+
+                    /** @type {selectLeftJoinOnArrayOptions} */
+                    var options = {
+                        dbField: "CustomerID",
+                        joinArray: [
+                            { PolicyID: 1, CustomerID: 123, PolicyRef: "POL1" },
+                            { PolicyID: 2, CustomerID: 123, PolicyRef: "POL2" },
+                            { PolicyID: 3, CustomerID: 125, PolicyRef: "POL3" }],
+                        arrayField: "CustomerID",
+                        storeFilterFn: function (c) { return c.CustomerID == 123 || c.CustomerID == 124; },
+                        orderBy: null,
+                        sortAscending: false,
+                        transformFnOrSelectDbItemsOnly: null
+                    };
+
+                    return _indexedDbSvc.selectLeftJoinOnArray("Customer", options);
+                })
+                .then(function (results) {
+
+                    expect(results.length).toEqual(3);
+
+                    forEach(results, function (idx, item) {
+
+                        expect([123, 124]).toContain(item.CustomerID);
+
+                        if (item.CustomerID == 123) {
+                            expect(item.PolicyID).not.toBeNull();
+                        }
+                        else if (item.CustomerID == 124) {
+                            expect(item.PolicyID).toBeUndefined();
+                        }
+                    });
+                });
+        });
+    });
+
+    describe("selectInnerJoinOnArray", function () {
+
+        it("Returns left (store) items merged with each matching right (array) item only where there is a matching right (array) item", function () {
+
+            var customersToStore = [
+                { CustomerID: 123, CustomerRef: "CUST123", CustomerName: "A Test" },
+                { CustomerID: 124, CustomerRef: "CUST124", CustomerName: "B Test" },
+                { CustomerID: 125, CustomerRef: "CUST125", CustomerName: "C Test" }
+            ];
+
+            return _indexedDbSvc.store("Customer", customersToStore)
+                .then(function () {
+
+                    /** @type {selectInnerJoinOnArrayOptions} */
+                    var options = {
+                        dbField: "CustomerID",
+                        joinArray: [
+                            { PolicyID: 1, CustomerID: 123, PolicyRef: "POL1" },
+                            { PolicyID: 2, CustomerID: 123, PolicyRef: "POL2" },
+                            { PolicyID: 3, CustomerID: 125, PolicyRef: "POL3" }],
+                        arrayField: "CustomerID",
+                        storeFilterFn: function (c) { return c.CustomerID == 123 || c.CustomerID == 124; },
+                        orderBy: null,
+                        sortAscending: false,
+                        transformFnOrSelectDbItemsOnly: null
+                    };
+
+                    return _indexedDbSvc.selectInnerJoinOnArray("Customer", options);
+                })
+                .then(function (results) {
+
+                    expect(results.length).toEqual(2);
+
+                    forEach(results, function (idx, item) {
+
+                        expect(item.CustomerID).toEqual(123);
+
+                        expect(item.PolicyID).not.toBeNull();
+
                     });
                 });
         });

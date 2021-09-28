@@ -16,9 +16,9 @@
  */
 
 /**
-    * Options for selectInnerJoin function.
-    * @typedef {Object} selectInnerJoinOptions
-    * @property {function} [filterFn] Optional function to filter items in the store being queried.
+    * Options for selectInnerJoinOnArray function.
+    * @typedef {Object} selectInnerJoinOnArrayOptions
+    * @property {function} [storeFilterFn] Optional function to filter items in the store being queried.
     * @property {function|Boolean|null} [transformFnOrSelectDbItemsOnly] Optional function to transform each database and matching array item before adding it to the result array. Or pass true to return just the database items. Or pass null/false to return database items merged with the matching array item.
     * @property {function|string|Array<string>|null} [orderBy] Either a function to sort items, a string naming 1 field to sort by, an array of strings naming multiple fields to sort by, or true to sort a string array result by default ascii character order.
     * @property {bool} [sortAscending] Optional Flag specifying whether to sort in ascending order (default) or descending.
@@ -30,7 +30,7 @@
 /**
     * Options for selectLeftJoinOnArray function.
     * @typedef {Object} selectLeftJoinOnArrayOptions
-    * @property {function} filterFn Optional function to filter items in the store being queried.
+    * @property {function} storeFilterFn Optional function to filter items in the store being queried.
     * @property {function|boolean} transformFnOrSelectDbItemsOnly Optional function to transform each database and array before adding it to the result array. Or pass true to return just the database items. Or pass null/false to return database items merged with the matching array item.
     * @property {function|string|array<string>} [orderBy] Either a function to sort items, a string naming 1 field to sort by, an array of strings naming multiple fields to sort by, or true to sort a string array result by default ascii character order.
     * @property {bool} [sortAscending] Optional Flag specifying whether to sort in ascending order (default) or descending.
@@ -42,6 +42,20 @@
 /**
     * Options for selectLeftJoin function.
     * @typedef {Object} selectLeftJoinOptions
+    * @property {string} leftStoreName Name of the left store.
+    * @property {function} [leftFilterFn] Optional function to filter items in the left store.
+    * @property {string} leftJoinField Name of the field in the left store's items to join to the right store's items.
+    * @property {string} rightStoreName Name of the right store.
+    * @property {function} [rightFilterFn] Optional function to filter items in the right store.
+    * @property {string} rightJoinField Name of the field in the right store's items to join to the left store's items.
+    * @property {function|boolean} transformFnOrSelectDbItemsOnly Optional function to transform each item before adding it to the result array. Or pass true to return just the left items. Or pass null/false to return the left items merged with the matching right items.
+    * @property {function|string|array<string>} [orderBy] Either a function to sort items, a string naming 1 field to sort by, an array of strings naming multiple fields to sort by, or true to sort a string array result by default ascii character order.
+    * @property {boolean} [sortAscending] Optional Flag specifying whether to sort in ascending order (default) or descending.
+*/
+
+/**
+    * Options for selectInnerJoin function.
+    * @typedef {Object} selectInnerJoinOptions
     * @property {string} leftStoreName Name of the left store.
     * @property {function} [leftFilterFn] Optional function to filter items in the left store.
     * @property {string} leftJoinField Name of the field in the left store's items to join to the right store's items.
@@ -295,16 +309,16 @@ var indexedDbSvc = (function () {
     /**
      * Performs a data query, joining the results to the provided array and returns database items that have a matching item in the array. Returns a Promise which is resolved when the async operation completes.
      * @param {string} storeName Name of the IndexedDB store (table) to query.
-     * @param {selectInnerJoinOptions} options Set of options for controlling the results.
+     * @param {selectInnerJoinOnArrayOptions} options Set of options for controlling the results.
      * @returns {Promise} Promise that is resolved when the async query operation completes.
      */
-    indexedDbSvc.prototype.selectInnerJoin = function (storeName, options) {
+    indexedDbSvc.prototype.selectInnerJoinOnArray = function (storeName, options) {
 
         options = options || {};
 
-        /** @type {selectInnerJoinOptions} */
+        /** @type {selectInnerJoinOnArrayOptions} */
         var opts = {
-            filterFn: options.filterFn,
+            storeFilterFn: options.storeFilterFn,
             transformFnOrSelectDbItemsOnly: options.transformFnOrSelectDbItemsOnly,
             orderBy: options.orderBy,
             sortAscending: options.sortAscending,
@@ -317,7 +331,7 @@ var indexedDbSvc = (function () {
 
         return new Promise(function (resolve, reject) {
 
-            self.select(storeName, { filterFn: opts.filterFn })
+            self.select(storeName, { filterFn: opts.storeFilterFn })
                 .then(function (dbItems) {
 
                     var joinedItems = [];
@@ -339,22 +353,32 @@ var indexedDbSvc = (function () {
 
                         if (matchingArrayItems.length > 0) {
 
-                            if (typeof opts.transformFnOrSelectDbItemsOnly === "function") {
-                                // Ensure the transform function takes at least 1 argument for the dbItem (it can take a 2nd arg for the joinArray item)
-                                if (opts.transformFnOrSelectDbItemsOnly.length < 1) {
-                                    throw new Error("When opts.transformFnOrSelectDbItemsOnly parameter is a function, it must take at least 1 argument for the db item (and optional 2nd arg for the array item)");
+                            _forEach(matchingArrayItems, function (idx, arrayItem) {
+
+                                var joinItem;
+
+                                if (typeof opts.transformFnOrSelectDbItemsOnly === "function") {
+                                    // Ensure the transform function takes at least 1 argument for the dbItem (it can take a 2nd arg for the joinArray item)
+                                    if (opts.transformFnOrSelectDbItemsOnly.length < 1) {
+                                        throw new Error("When opts.transformFnOrSelectDbItemsOnly parameter is a function, it must take at least 1 argument for the db item (and optional 2nd arg for the array item)");
+                                    }
+
+                                    joinItem = opts.transformFnOrSelectDbItemsOnly.call(null, dbItem, arrayItem);
+                                }
+                                else if (opts.transformFnOrSelectDbItemsOnly !== true) {
+                                    // Merge the first matching array item into the db item
+                                    joinItem = _extend({}, dbItem);
+                                    joinItem = _extend(joinItem, arrayItem);
+                                }
+                                else {
+                                    // else just select the unmodified dbItem
+                                    joinItem = dbItem;
                                 }
 
-                                dbItem = opts.transformFnOrSelectDbItemsOnly.call(null, dbItem, matchingArrayItems[0]);
-                            }
-                            else if (opts.transformFnOrSelectDbItemsOnly !== true) {
-                                // Merge the first matching array item into the db item
-                                _extend(dbItem, matchingArrayItems[0]);
-                            }
-                            // else just select the unmodified dbItem
+                                // Add merged object to array of joined items
+                                joinedItems.push(joinItem);
 
-                            // Add merged object to array of joined items
-                            joinedItems.push(dbItem);
+                            });
                         }
                     });
 
@@ -367,12 +391,11 @@ var indexedDbSvc = (function () {
                     resolve(joinedItems);
                 });
 
-
         });
     };
 
     /**
-     * Performs a data query, then left-joins the results to another array and returns all database items regardless of them having a matching item in the array.
+     * Performs a data query, then left-joins the results to an array and returns at least 1 instance of all database items regardless of them having a matching item in the array, possibly merged with with a matching array item, and possible more instance for subsequent matches.
      * @param {string} storeName Name of the IndexedDB store (table) to query.
      * @param {selectLeftJoinOnArrayOptions} options Set of options for controlling the results.
      * @returns {Promise} Promise that is resolved when the async query operation completes.
@@ -382,7 +405,7 @@ var indexedDbSvc = (function () {
         options = options || {};
 
         var opts = {
-            filterFn: options.filterFn,
+            storeFilterFn: options.storeFilterFn,
             transformFnOrSelectDbItemsOnly: options.transformFnOrSelectDbItemsOnly,
             orderBy: options.orderBy,
             sortAscending: options.sortAscending,
@@ -395,7 +418,7 @@ var indexedDbSvc = (function () {
 
         return new Promise(function (resolve, reject) {
 
-            self.select(storeName, opts.filterFn)
+            self.select(storeName, { filterFn: opts.storeFilterFn })
                 .then(function (dbItems) {
 
                     var joinedItems = [];
@@ -412,23 +435,38 @@ var indexedDbSvc = (function () {
 
                         if (matchingArrayItems.length > 0) {
 
-                            if (typeof opts.transformFnOrSelectDbItemsOnly === "function") {
-                                // Validate transform function takes 2 arguments
-                                if (opts.transformFnOrSelectDbItemsOnly.length !== 2) {
-                                    throw new Error("When opts.transformFnOrSelectDbItemsOnly parameter is a function, it must take 2 arguments for the db item and array item");
+                            _forEach(matchingArrayItems, function (idx, arrayItem) {
+
+                                var joinItem;
+
+                                if (typeof opts.transformFnOrSelectDbItemsOnly === "function") {
+                                    // Ensure the transform function takes at least 1 argument for the dbItem (it can take a 2nd arg for the joinArray item)
+                                    if (opts.transformFnOrSelectDbItemsOnly.length < 1) {
+                                        throw new Error("When opts.transformFnOrSelectDbItemsOnly parameter is a function, it must take at least 1 argument for the db item (and optional 2nd arg for the array item)");
+                                    }
+
+                                    joinItem = opts.transformFnOrSelectDbItemsOnly.call(null, dbItem, arrayItem);
+                                }
+                                else if (opts.transformFnOrSelectDbItemsOnly !== true) {
+                                    // Merge the first matching array item into the db item
+                                    joinItem = _extend({}, dbItem);
+                                    joinItem = _extend(joinItem, arrayItem);
+                                }
+                                else {
+                                    // else just select the unmodified dbItem
+                                    joinItem = dbItem;
                                 }
 
-                                dbItem = opts.transformFnOrSelectDbItemsOnly.call(null, dbItem, matchingArrayItems[0]);
-                            }
-                            else if (opts.transformFnOrSelectDbItemsOnly !== true) {
-                                // Merge the first matching array item into the db item
-                                _extend(dbItem, matchingArrayItems[0]);
-                            }
-                            // else just select the unmodified dbItem
+                                // Add merged object to array of joined items
+                                joinedItems.push(joinItem);
+
+                            });
+                        }
+                        else {
+                            // 
+                            joinedItems.push(dbItem);
                         }
 
-                        // Add object (whether it's been merged with a matching array item or not) to array of joined items
-                        joinedItems.push(dbItem);
                     });
 
                     // Sort
@@ -519,28 +557,11 @@ var indexedDbSvc = (function () {
 
                                 joinedItems.push(itemToAdd);
                             });
-
-                            //if (typeof opts.transformFnOrSelectDbItemsOnly === "function") {
-                            //    // Validate that the transform function takes 2 arguments
-                            //    if (opts.transformFnOrSelectDbItemsOnly.length !== 2) {
-                            //        throw new Error("When transformFnOrSelectDbItemsOnly parameter is a function, it must take 2 arguments for the left and right items");
-                            //    }
-
-                            //    leftItem = opts.transformFnOrSelectDbItemsOnly.call(null, leftItem, matchingRightItems[0]);
-                            //}
-                            //else if (opts.transformFnOrSelectDbItemsOnly !== true) {
-                            //    // Merge the first matching right item into the left item
-                            //    _extend(leftItem, matchingRightItems[0]);
-                            //}
-                            //// else just select the unmodified leftItem
                         }
                         else {
                             // Add the left object as-is
                             joinedItems.push(leftItem);
                         }
-
-                        //// Add object (whether it's been merged with a matching right item or not) to array of joined items
-                        //joinedItems.push(leftItem);
 
                     });
 
@@ -556,6 +577,105 @@ var indexedDbSvc = (function () {
                 .catch(function (reason) {
 
                     console.error("indexedDbSvc.selectLeftJoin - failed " + opts.leftStoreName + " " + opts.rightStoreName);
+                    reject(reason);
+                });
+
+        });
+    };
+
+    /**
+     * Queries left and right stores (tables), then joins the results and returns all matching left store items, merged with the joined right store items.
+     * @param {selectInnerJoinOptions} options Set of options for controlling the results.
+     */
+    indexedDbSvc.prototype.selectInnerJoin = function (options) {
+
+        options = options || {};
+
+        var opts = {
+            leftStoreName: options.leftStoreName,
+            leftFilterFn: options.leftFilterFn,
+            leftJoinField: options.leftJoinField,
+            rightStoreName: options.rightStoreName,
+            rightFilterFn: options.rightFilterFn,
+            rightJoinField: options.rightJoinField,
+            transformFnOrSelectDbItemsOnly: options.transformFnOrSelectDbItemsOnly,
+            orderBy: options.orderBy,
+            sortAscending: options.sortAscending
+        };
+
+        var self = this;
+
+        return new Promise(function (resolve, reject) {
+
+            self.select(opts.leftStoreName, { filterFn: opts.leftFilterFn })
+                .then(function (leftItems) {
+
+                    return self.select(opts.rightStoreName, opts.rightFilterFn)
+                        .then(function (rightItems) {
+
+                            return [leftItems, rightItems];
+                        });
+                })
+                .then(function (leftAndRightItems) {
+
+                    var leftItems = leftAndRightItems[0];
+                    var rightItems = leftAndRightItems[1];
+                    var joinedItems = [];
+                    var matchingRightItems;
+                    var leftJoinFieldValue;
+
+                    _forEach(leftItems, function (idx, leftItem) {
+
+                        leftJoinFieldValue = leftItem[opts.leftJoinField];
+
+                        matchingRightItems = _grep(rightItems, function (arrItm) {
+
+                            return _stringEquals(arrItm[opts.rightJoinField], leftJoinFieldValue);
+                        });
+
+                        if (matchingRightItems.length > 0) {
+
+                            _forEach(matchingRightItems, function (idx, rightItem) {
+
+                                var itemToAdd = {};
+
+                                if (typeof opts.transformFnOrSelectLeftItemsOnly === "function") {
+                                    // Validate that the transform function takes 2 arguments
+                                    if (opts.transformFnOrSelectLeftItemsOnly.length !== 2) {
+                                        throw new Error("When transformFnOrSelectDbItemsOnly parameter is a function, it must take 2 arguments for the left and right items");
+                                    }
+
+                                    itemToAdd = opts.transformFnOrSelectLeftItemsOnly.call(null, leftItem, rightItem);
+                                }
+                                else if (opts.transformFnOrSelectLeftItemsOnly !== true) {
+                                    // Merge the matching right item into a copy of the left item
+                                    _extend(itemToAdd, leftItem);
+                                    _extend(itemToAdd, rightItem);
+                                }
+                                else {
+                                    // Just select the unmodified leftItem
+                                    _extend(itemToAdd, leftItem);
+                                }
+
+                                joinedItems.push(itemToAdd);
+                            });
+
+                        }
+
+                    });
+
+                    // Sort
+                    if (opts.orderBy != null) {
+                        _sortResultItems(joinedItems, opts.orderBy, opts.sortAscending);
+                    }
+
+                    // Resolve
+                    resolve(joinedItems);
+
+                })
+                .catch(function (reason) {
+
+                    console.error("indexedDbSvc.selectInnerJoin - failed " + opts.leftStoreName + " " + opts.rightStoreName);
                     reject(reason);
                 });
 
@@ -672,7 +792,7 @@ var indexedDbSvc = (function () {
 
     /**
      * Saves data to multiple object stores (tables).
-     * @param {ArrayLike} allStoreNamesAndDatas An array keys (store names) and data values (array or single object) to store in each.
+     * @param {ArrayLike} allStoreNamesAndDatas An array of keys (store names) and data values (array or single object) to store in each.
      * @returns {Promise} A Promsie that is resolved when all stores have been written to.
     */
     indexedDbSvc.prototype.storeMany = function (allStoreNamesAndDatas) {
@@ -749,7 +869,7 @@ var indexedDbSvc = (function () {
                             // Put in ascending order so we can form a key range for openCursor
                             indexVals.sort();
 
-                            // Open a cursor spanning the lowest to highest key values
+                            // Open a cursor spanning the lowest to highest key values - this may include items not specified for deletion
                             var request = index.openCursor(IDBKeyRange.bound(indexVals[0], indexVals[indexVals.length - 1]));
 
                             request.onsuccess = function () {
@@ -758,14 +878,15 @@ var indexedDbSvc = (function () {
 
                                 if (cursor) {
 
-                                    var nextId = request.result.key;
+                                    var currentId = request.result.key;
 
-                                    if (indexVals.indexOf(nextId) > -1) {
+                                    // Delete current item if it is one of the items specified for deletion
+                                    if (indexVals.indexOf(currentId) > -1) {
                                         cursor.delete();
                                         qtyRowsDeleted++;
                                     }
 
-                                    cursor.continue();
+                                    cursor.continue(); // Triggers request.onsuccess again
                                 }
                             }
 
@@ -1133,13 +1254,16 @@ var indexedDbSvc = (function () {
                     var db = evt.target.result;
 
                     if (db.objectStoreNames.contains(storeName)) {
+                        db.close();
                         resolve(true)
                     }
                     else {
+                        db.close();
                         resolve(false);
                     }
                 }
                 catch (e) {
+                    db.close();
                     console.error("StoreExists - error checking for " + storeName + " - " + e);
                     reject("StoreExists db open onsuccess " + storeName + " - " + e);
                 }
