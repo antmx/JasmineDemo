@@ -144,7 +144,7 @@ var indexVue = new Vue({
         },
 
         showStoreItemEditor: function (itemIdentifier, activeStoreName) {
-
+            
             var self = this;
 
             this.clearSelectedItems();

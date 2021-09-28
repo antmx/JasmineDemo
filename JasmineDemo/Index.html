@@ -52,7 +52,7 @@
                         </div>
                     </li>
                     <li class="list-group-item list-group-item-action">
-                        <button class="btn btn-sm btn-success" v-on:click="showStoreItemEditor(null)">Add {{activeStoreName || "item"}}</button>
+                        <button class="btn btn-sm btn-success" v-on:click="showStoreItemEditor(null, activeStoreName)">Add {{activeStoreName || "item"}}</button>
                         <button class="btn btn-sm btn-warning" v-on:click="clearSelectedStore()">Clear {{activeStoreName || "item"}} store</button>
                     </li>
                 </ul>
