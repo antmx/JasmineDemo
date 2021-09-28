@@ -1,3 +1,6 @@
+/*
+ * Copyright Anthony Chambers 2021
+ */
 
 /*jslint
     this: true, for: true, white: true
