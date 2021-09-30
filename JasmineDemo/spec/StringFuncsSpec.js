@@ -30,6 +30,20 @@ describe("stringFuncs", function () {
 
             expect(result).toBe(false);
         });
+
+        it("should return false when both first string is empty and second string is null and nullEqualsEmpty param is true", function () {
+
+            var result = stringEquals("", null, false, true);
+
+            expect(result).toBe(true);
+        });
+
+        it("should return false when both first string is empty and second string is null and nullEqualsEmpty param is false", function () {
+
+            var result = stringEquals("", null, false, false);
+
+            expect(result).toBe(false);
+        });        
     });
 
     describe("stringIsNullOrEmpty", function () {

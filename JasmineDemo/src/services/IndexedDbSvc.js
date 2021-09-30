@@ -407,6 +407,7 @@ var indexedDbSvc = (function () {
 
         options = options || {};
 
+        /** @type {selectLeftJoinOnArrayOptions} */
         var opts = {
             storeFilterFn: options.storeFilterFn,
             transformFnOrSelectDbItemsOnly: options.transformFnOrSelectDbItemsOnly,
@@ -492,6 +493,7 @@ var indexedDbSvc = (function () {
 
         options = options || {};
 
+        /** @type {selectLeftJoinOptions} */
         var opts = {
             leftStoreName: options.leftStoreName,
             leftFilterFn: options.leftFilterFn,
@@ -594,6 +596,7 @@ var indexedDbSvc = (function () {
 
         options = options || {};
 
+        /** @type {selectInnerJoinOptions} */
         var opts = {
             leftStoreName: options.leftStoreName,
             leftFilterFn: options.leftFilterFn,

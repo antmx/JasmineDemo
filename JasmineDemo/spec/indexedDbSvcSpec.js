@@ -27,14 +27,14 @@ describe("indexedDbSvc", function () {
         },
     ];
 
-    beforeAll(function () {
+    //beforeAll(function () {
 
-        return _indexedDbSvc.deleteDatabase()
-            .then(function () {
+    //    return _indexedDbSvc.deleteDatabase()
+    //        .then(function () {
 
-                return _indexedDbSvc.createDatabase(1, storeSpecs);
-            });
-    });
+    //            return _indexedDbSvc.createDatabase(1, storeSpecs);
+    //        });
+    //});
 
     beforeEach(function () {
 
