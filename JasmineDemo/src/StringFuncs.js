@@ -415,3 +415,26 @@ function isString(obj) {
 
     return typeof obj === "string";
 }
+
+/**
+ * Inserts values into another string containing numbered placeholders, returning a copy of the string with any placeholders replaced by the string representation of each arg value. Accepts any number of format items.
+ * @param {String} str A string containing format placeholders, e.g. "Hello, {0}!"
+ * @param {...any} args One or more values to insert into str.
+ */
+function stringFormat(str, ...args) {
+
+    if (str == null || typeof str !== "string" || args == null || args.length < 1) {
+        return str;
+    }
+
+    var rxPattern;
+
+    for (var idx = 0; idx < args.length; idx++) {
+
+        rxPattern = "\\{" + idx + "\\}";
+
+        str = str.replace(new RegExp(rxPattern, "g"), args[idx]);
+    }
+
+    return str;
+}

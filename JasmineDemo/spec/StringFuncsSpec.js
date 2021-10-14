@@ -16,9 +16,9 @@ describe("stringFuncs", function () {
 
             expect(result).toBe(true);
         });
-        
+
         it("should return true when both strings are equal but different case and default case-insensitive comparison performed", function () {
-            
+
             var result = stringEquals("foo", "Foo");
 
             expect(result).toBe(true);
@@ -43,11 +43,11 @@ describe("stringFuncs", function () {
             var result = stringEquals("", null, false, false);
 
             expect(result).toBe(false);
-        });        
+        });
     });
 
     describe("stringIsNullOrEmpty", function () {
-        
+
         it("should return true for null", function () {
 
             var result = stringIsNullOrEmpty(null);
@@ -82,5 +82,30 @@ describe("stringFuncs", function () {
 
             expect(result).toBe(false);
         });
+    });
+
+    describe("stringFormat", function () {
+
+        it("should replace a single item", function () {
+            
+            var result = stringFormat("Hello, {0}!", "World");
+
+            expect(result).toEqual("Hello, World!");
+        });
+
+        it("should replace multiple items", function () {
+            
+            var result = stringFormat("Hello, {0} {1}!", "Joe", "Foo");
+
+            expect(result).toEqual("Hello, Joe Foo!");
+        });
+
+        it("should replace multiple items with the same placeholder number", function () {
+            
+            var result = stringFormat("Hello, {0} {1}! How are you {0}?", "Joe", "Foo");
+
+            expect(result).toEqual("Hello, Joe Foo! How are you Joe?");
+        });
+
     });
 });

@@ -2,8 +2,8 @@
 
 describe("indexedDbSvc", function () {
 
-    const dbName = "JasmineDemo";
-    const _indexedDbSvc = new indexedDbSvc(dbName);
+    const _dbName = "JasmineDemo";
+    const _indexedDbSvc = new indexedDbSvc(_dbName);
     jasmine.getEnv().configure({ random: false });
 
     const storeSpecs = [
@@ -27,14 +27,9 @@ describe("indexedDbSvc", function () {
         },
     ];
 
-    //beforeAll(function () {
+    beforeAll(function () {
 
-    //    return _indexedDbSvc.deleteDatabase()
-    //        .then(function () {
-
-    //            return _indexedDbSvc.createDatabase(1, storeSpecs);
-    //        });
-    //});
+    });
 
     beforeEach(function () {
 
@@ -60,7 +55,7 @@ describe("indexedDbSvc", function () {
 
         it("should return true when called with existing database name (DoneFn, all browsers)", function (doneFn) {
 
-            _indexedDbSvc.databaseExists(dbName)
+            _indexedDbSvc.databaseExists(_dbName)
                 .then(function (exists) {
                     expect(exists).toBeTrue();
 
@@ -70,7 +65,7 @@ describe("indexedDbSvc", function () {
 
         it("should return true when called with existing database name (Promise, none-IE browsers)", function () {
 
-            return _indexedDbSvc.databaseExists(dbName)
+            return _indexedDbSvc.databaseExists(_dbName)
                 .then(function (exists) {
                     expect(exists).toBeTrue();
                 });
@@ -78,7 +73,7 @@ describe("indexedDbSvc", function () {
 
         it('should return true when called with existing database name (async, none-IE browsers)', async function () {
 
-            const exists = await _indexedDbSvc.databaseExists(dbName);
+            const exists = await _indexedDbSvc.databaseExists(_dbName);
             expect(exists).toBeTrue();
         });
 
@@ -178,22 +173,106 @@ describe("indexedDbSvc", function () {
         });
     });
 
+    describe("selectWithExternalCallback", function () {
+
+        it("should return all rows when no filter provided", function (doneFn) {
+
+            var customersToStore1 = [
+                { CustomerID: 1, CustomerRef: "CUST001", CustomerName: "A Test" },
+                { CustomerID: 2, CustomerRef: "CUST002", CustomerName: "B Test" }
+            ];
+
+            _indexedDbSvc.storeWithCallback("Customer", customersToStore1, storeCallback1);
+
+            // Shed load of callback functions!
+            function storeCallback1(qtyRowsStored) {
+
+                var customersToStore2 = [
+                    { CustomerID: 3, CustomerRef: "CUST003", CustomerName: "C Test" },
+                    { CustomerID: 4, CustomerRef: "CUST004", CustomerName: "D Test" }
+                ];
+
+                _indexedDbSvc.storeWithCallback("Customer", customersToStore2, storeCallback2);
+            };
+
+            function storeCallback2(qtyRowsStored) {
+
+                _indexedDbSvc.selectWithCallback("Customer", null, selectCallback);
+            };
+
+            function selectCallback(customers) {
+
+                expect(customers.length).toEqual(4);
+
+                doneFn();
+            };
+
+        });
+
+    });
+
+    describe("selectWithInlineCallback", function () {
+
+        it("should return all rows when no filter provided", function (doneFn) {
+            
+            var customersToStore1 = [
+                { CustomerID: 1, CustomerRef: "CUST001", CustomerName: "A Test" },
+                { CustomerID: 2, CustomerRef: "CUST002", CustomerName: "B Test" }
+            ];
+
+            // Pyramid of doom!
+            _indexedDbSvc.storeWithCallback("Customer", customersToStore1, function (qtyRowsStored) {
+
+                var customersToStore2 = [
+                    { CustomerID: 3, CustomerRef: "CUST003", CustomerName: "C Test" },
+                    { CustomerID: 4, CustomerRef: "CUST004", CustomerName: "D Test" }
+                ];
+
+                _indexedDbSvc.storeWithCallback("Customer", customersToStore2, function (qtyRowsStored) {
+
+                    _indexedDbSvc.selectWithCallback("Customer", null, function (customers) {
+                        
+                        expect(customers.length).toEqual(customersToStore1.length + customersToStore2.length);
+
+                        expect(customers[0].CustomerID).toEqual(1);
+
+                        doneFn();
+                    });
+
+                });
+
+            });
+
+        });
+    });
+
     describe("select", function () {
 
         it("should return all rows when no filter function provided", function () {
 
-            var customersToStore = [
-                { CustomerID: 124, CustomerRef: "CUST004", CustomerName: "B Test" },
-                { CustomerID: 125, CustomerRef: "CUST005", CustomerName: "C Test" }
+            var customersToStore1 = [
+                { CustomerID: 1, CustomerRef: "CUST001", CustomerName: "A Test" },
+                { CustomerID: 2, CustomerRef: "CUST002", CustomerName: "B Test" }
             ];
 
-            return _indexedDbSvc.store("Customer", customersToStore)
-                .then(function (qtyStore) {
+            var customersToStore2 = [
+                { CustomerID: 3, CustomerRef: "CUST003", CustomerName: "C Test" },
+                { CustomerID: 4, CustomerRef: "CUST004", CustomerName: "D Test" }
+            ];
+
+            return _indexedDbSvc.store("Customer", customersToStore1)
+                .then(function (qtyRowsStored) {
+
+                    return _indexedDbSvc.store("Customer", customersToStore2);
+                })
+                .then(function (qtyRowsStored) {
+
                     return _indexedDbSvc.select("Customer");
                 })
                 .then(function (customers) {
-                    expect(customers.length).toEqual(customersToStore.length);
-                    expect(customers[0].CustomerID).toEqual(124);
+
+                    expect(customers.length).toEqual(customersToStore1.length + customersToStore2.length);
+                    expect(customers[0].CustomerID).toEqual(1);
                 });
         });
 
@@ -205,7 +284,7 @@ describe("indexedDbSvc", function () {
             ];
 
             return _indexedDbSvc.store("Customer", customersToStore)
-                .then(function (qtyStore) {
+                .then(function (qtyRowsStored) {
 
                     return _indexedDbSvc.select("Customer", { filterFn: function (c) { return c.CustomerID === 124; } });
                 })
@@ -215,7 +294,7 @@ describe("indexedDbSvc", function () {
                 });
         });
 
-        it("should return items in descending order when orderBy field set and sortAscending flag to false", function () {
+        it("should return items in descending order when orderBy field set and sortAscending flag is set to false", function () {
 
             var customersToStore = [
                 { CustomerID: 124, CustomerRef: "CUST004", CustomerName: "B Test" },
@@ -223,7 +302,7 @@ describe("indexedDbSvc", function () {
             ];
 
             return _indexedDbSvc.store("Customer", customersToStore)
-                .then(function (qtyStore) {
+                .then(function (qtyRowsStored) {
 
                     return _indexedDbSvc.select("Customer", { orderBy: "CustomerID", sortAscending: false });
                 })

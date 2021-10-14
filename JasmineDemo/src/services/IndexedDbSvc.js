@@ -102,6 +102,34 @@ var indexedDbSvc = (function () {
     };
 
     /**
+     * Performs a data query on a store (table). Calls a callback function once the async operation completes.
+     * @param {string} storeName IndexedDB store (table) name to query.
+     * @param {selectOptions} [options] Optional set of options for controlling the results.
+     * @param {Function} callbackFn
+     */
+    indexedDbSvc.prototype.selectWithCallback = function (storeName, options, callbackFn) {
+
+        this.select(storeName, options)
+            .then(function (results) {
+                callbackFn.call(null, results);
+            });
+    };
+
+    /**
+    * Performs a data query on a store (table). Calls a callback function once the async operation completes.
+    * @param {string} storeName IndexedDB store (table) name to query.
+    * @param {ArrayLike} dbData The data to store.
+    * @param {Function} callbackFn 
+    */
+    indexedDbSvc.prototype.storeWithCallback = function (storeName, dbData, callbackFn) {
+
+        this.store(storeName, dbData)
+            .then(function (qtyRowsStored) {
+                callbackFn.call(null, qtyRowsStored);
+            });
+    };
+
+    /**
      * Performs a data query on a store (table). Returns a Promise which is resolved when the async operation completes.
      * @param {string} storeName IndexedDB store (table) name to query.
      * @param {selectOptions} [options] Optional set of options for controlling the results.
@@ -231,17 +259,11 @@ var indexedDbSvc = (function () {
 
                             if (cursor) {
                                 resultItems.push(cursor.value);
-                                cursor.continue();
+                                cursor.continue(); // Re-triggers cursorRequest.onsuccess
                             }
                             else {
 
                                 db.close();
-
-                                // filterFn should be something like
-                                // function (elementOfArray[, indexInArray]) { return elementOfArray.pr_Deleted == "False"; })
-
-                                // transformFn should be something like
-                                // function (valueOfElement) { return new Genus.PriceMatrixRule(valueOfElement); }
 
                                 // Apply filter
                                 if (typeof opts.filterFn === "function") {
@@ -254,7 +276,7 @@ var indexedDbSvc = (function () {
                                     var valueOfElement;
 
                                     for (var idx = 0; idx < resultItems.length; idx++) {
-                                        var valueOfElement = resultItems[idx];
+                                        valueOfElement = resultItems[idx];
                                         transformed = opts.transformFn.call(null, valueOfElement);
                                         resultItems[idx] = transformed;
                                     }
@@ -274,8 +296,13 @@ var indexedDbSvc = (function () {
                                     resolve(resultItems);
                                 }
                             }
+                        };
 
-                            //db.close();
+                        cursorRequest.onerror = function (evt) {
+
+                            db.close();
+                            console.error(evt);
+                            reject(evt);
                         };
                     }
                 } catch (e) {
@@ -771,8 +798,10 @@ var indexedDbSvc = (function () {
                         } catch (e) {
                         }
 
-                        console.error("Store tx aborted for " + storeName + " " + errorName + evt);
-                        reject("Store tx aborted"); // Signal error
+                        var errorMsg = _stringFormat("Store tx aborted for {0}: {1} - {2} ", storeName, errorName, evt);
+
+                        console.error(errorMsg);
+                        reject("Store tx aborted " + errorMsg); // Signal error
                     };
                 }
                 catch (e) {
@@ -1205,7 +1234,7 @@ var indexedDbSvc = (function () {
     };
 
     /**
-     * Determines if an IndexedDB database with given name exists.
+     * Determines if an IndexedDB database with the given name exists.
      * @param {string} dbName Name of the database to look for.
      * @returns {Promise<boolean>}
      */
@@ -1213,6 +1242,7 @@ var indexedDbSvc = (function () {
 
         return new Promise(function (resolve, reject) {
 
+            /** @type {Promise} */
             var databasesRequest = indexedDB.databases();
 
             databasesRequest.then(function onFulfilled(values) {
@@ -1615,6 +1645,29 @@ var indexedDbSvc = (function () {
 
         return false;
     };
+
+    /**
+     * Inserts values into another string containing numbered placeholders, returning a copy of the string with any placeholders replaced by the string representation of each arg. Accepts any number of format items.
+     * @param {String} str A string containing format placeholders, e.g. "Hello, {0}!"
+     * @param {...any} args One or more values to insert into str.
+     */
+    var _stringFormat = function(str, ...args) {
+
+        if (str == null || typeof str !== "string" || args == null || args.length < 1) {
+            return str;
+        }
+
+        var rxPattern;
+
+        for (var idx = 0; idx < args.length; idx++) {
+
+            rxPattern = "\\{" + idx + "\\}";
+
+            str = str.replace(new RegExp(rxPattern, "g"), args[idx]);
+        }
+
+        return str;
+    }
 
     /**
      * Converts an object to a form that can be sortable.
